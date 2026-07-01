@@ -378,6 +378,12 @@ function formatTime(totalSeconds) {
 
 // --- GAME LIFECYCLE ---
 function startNewGame(difficulty) {
+  modalDifficulty.classList.add('hidden');
+  const modalLoading = document.getElementById('modal-loading');
+  if (modalLoading) {
+    modalLoading.classList.remove('hidden');
+  }
+
   // Reset UI and state
   selectedRow = -1;
   selectedCol = -1;
@@ -391,44 +397,59 @@ function startNewGame(difficulty) {
   eraserCount = 0;
   hintCount = 0;
   updateCountersUI(false);
+
+  // Initialize Web Worker for background generation
+  const worker = new Worker(new URL('./sudokuWorker.js', import.meta.url), { type: 'module' });
+  worker.postMessage({ difficulty });
   
-  // Set difficulty badge
-  const diffLabels = {
-    easy: '🐱 簡單 (Easy)',
-    medium: '🐶 中等 (Medium)',
-    hard: '🐯 困難 (Hard)',
-    expert: '🧙‍♂️ 專家 (Expert)'
+  worker.onmessage = function (e) {
+    const { success, result, error } = e.data;
+    
+    if (modalLoading) {
+      modalLoading.classList.add('hidden');
+    }
+    worker.terminate();
+
+    if (success) {
+      const { puzzle, solution } = result;
+      board = new Board(puzzle, solution, difficulty);
+      window.board = board;
+
+      // Set difficulty badge
+      const diffLabels = {
+        easy: '🐱 簡單 (Easy)',
+        medium: '🐶 中等 (Medium)',
+        hard: '🐯 困難 (Hard)',
+        expert: '🧙‍♂️ 專家 (Expert)'
+      };
+      labelDifficulty.textContent = diffLabels[difficulty] || difficulty;
+
+      // Reset Timer
+      secondsElapsed = 0;
+      timerEl.textContent = '00:00';
+      isPaused = false;
+      btnPause.textContent = '⏸️';
+      pauseOverlay.classList.add('hidden');
+
+      // Stats increment
+      const stats = getStats();
+      stats.totalGames++;
+      if (stats.difficultyStats && stats.difficultyStats[difficulty]) {
+        stats.difficultyStats[difficulty].games++;
+      }
+      saveStats(stats);
+
+      // Render & Start
+      renderBoard();
+      updateNumpadCounts();
+      updateUndoRedoButtons();
+      startTimer();
+      saveCurrentGame();
+    } else {
+      console.error('Failed to generate Sudoku:', error);
+      showToast('生成數獨失敗，請重試。', 'warning');
+    }
   };
-  labelDifficulty.textContent = diffLabels[difficulty] || difficulty;
-
-  // Generate Sudoku
-  const { puzzle, solution } = generateSudoku(difficulty);
-  board = new Board(puzzle, solution, difficulty);
-  window.board = board;
-
-  // Reset Timer
-  secondsElapsed = 0;
-  timerEl.textContent = '00:00';
-  isPaused = false;
-  btnPause.textContent = '⏸️';
-  pauseOverlay.classList.add('hidden');
-
-  // Stats increment
-  const stats = getStats();
-  stats.totalGames++;
-  if (stats.difficultyStats && stats.difficultyStats[difficulty]) {
-    stats.difficultyStats[difficulty].games++;
-  }
-  saveStats(stats);
-
-  // Render & Start
-  renderBoard();
-  updateNumpadCounts();
-  updateUndoRedoButtons();
-  startTimer();
-  saveCurrentGame();
-
-  modalDifficulty.classList.add('hidden');
 }
 
 function resetGame() {

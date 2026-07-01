@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sudoku Generator and Solver Utilities
  */
 
