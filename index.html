@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sub Sudoku - 現代極致數獨遊戲</title>
+    <title>數獨遊戲 - 現代極致數獨遊戲</title>
     <!-- Google Fonts for modern look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
         <header class="game-header">
           <div class="logo-area">
             <span class="logo-icon">🧩</span>
-            <h1>Sub Sudoku</h1>
+            <h1>數獨遊戲</h1>
           </div>
           <div class="header-controls">
             <button id="btn-help" class="icon-btn" title="遊戲說明">ℹ️</button>
@@ -165,7 +165,7 @@
             </ul>
             
             <div class="help-footer" style="margin-top: 16px; border-top: 1px solid var(--border-thin); padding-top: 12px; font-size: 11px; color: var(--text-muted); text-align: right; line-height: 1.5;">
-              <div>版本：v1.1</div>
+              <div>版本：v1.2</div>
               <div>製作日期：2026-07-01</div>
             </div>
           </div>
@@ -180,20 +180,32 @@
           <p>數獨拼圖將會依據您選的難度動態生成</p>
           <div class="difficulty-options">
             <button class="diff-opt-btn" data-difficulty="easy">
-              <span class="diff-title">簡單 (Easy)</span>
-              <span class="diff-desc">適合新手，提供大約 40 個已知數字</span>
+              <span class="diff-avatar" style="font-size: 32px; line-height: 1;">🐱</span>
+              <div class="diff-info" style="display: flex; flex-direction: column;">
+                <span class="diff-title">簡單 (Easy)</span>
+                <span class="diff-desc">適合新手，提供大約 40 個已知數字</span>
+              </div>
             </button>
             <button class="diff-opt-btn" data-difficulty="medium">
-              <span class="diff-title">中等 (Medium)</span>
-              <span class="diff-desc">適合日常挑戰，提供大約 33 個已知數字</span>
+              <span class="diff-avatar" style="font-size: 32px; line-height: 1;">🐶</span>
+              <div class="diff-info" style="display: flex; flex-direction: column;">
+                <span class="diff-title">中等 (Medium)</span>
+                <span class="diff-desc">適合日常挑戰，提供大約 33 個已知數字</span>
+              </div>
             </button>
             <button class="diff-opt-btn" data-difficulty="hard">
-              <span class="diff-title">困難 (Hard)</span>
-              <span class="diff-desc">考驗排除法邏輯，提供大約 27 個已知數字</span>
+              <span class="diff-avatar" style="font-size: 32px; line-height: 1;">🐯</span>
+              <div class="diff-info" style="display: flex; flex-direction: column;">
+                <span class="diff-title">困難 (Hard)</span>
+                <span class="diff-desc">考驗排除法邏輯，提供大約 27 個已知數字</span>
+              </div>
             </button>
             <button class="diff-opt-btn" data-difficulty="expert">
-              <span class="diff-title">專家 (Expert)</span>
-              <span class="diff-desc">極具挑戰，僅提供大約 22 個已知數字</span>
+              <span class="diff-avatar" style="font-size: 32px; line-height: 1;">🧙‍♂️</span>
+              <div class="diff-info" style="display: flex; flex-direction: column;">
+                <span class="diff-title">專家 (Expert)</span>
+                <span class="diff-desc">極具挑戰，僅提供大約 22 個已知數字</span>
+              </div>
             </button>
           </div>
           <button id="btn-close-difficulty" class="btn btn-secondary modal-close-btn">取消</button>

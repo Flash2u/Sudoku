@@ -239,10 +239,10 @@ function startNewGame(difficulty) {
   
   // Set difficulty badge
   const diffLabels = {
-    easy: '簡單 (Easy)',
-    medium: '中等 (Medium)',
-    hard: '困難 (Hard)',
-    expert: '專家 (Expert)'
+    easy: '🐱 簡單 (Easy)',
+    medium: '🐶 中等 (Medium)',
+    hard: '🐯 困難 (Hard)',
+    expert: '🧙‍♂️ 專家 (Expert)'
   };
   labelDifficulty.textContent = diffLabels[difficulty] || difficulty;
 
@@ -332,10 +332,10 @@ function tryLoadGame() {
 
     // Restore difficulty badge
     const diffLabels = {
-      easy: '簡單 (Easy)',
-      medium: '中等 (Medium)',
-      hard: '困難 (Hard)',
-      expert: '專家 (Expert)'
+      easy: '🐱 簡單 (Easy)',
+      medium: '🐶 中等 (Medium)',
+      hard: '🐯 困難 (Hard)',
+      expert: '🧙‍♂️ 專家 (Expert)'
     };
     labelDifficulty.textContent = diffLabels[board.difficulty] || board.difficulty;
 
