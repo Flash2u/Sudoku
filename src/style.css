@@ -27,6 +27,12 @@
   --cell-bg-error: rgba(239, 68, 68, 0.28);
   
   --highlight-group: rgba(168, 85, 247, 0.06);      /* Row/Col/Box hover highlight */
+  --highlight-row: rgba(168, 85, 247, 0.04);
+  --highlight-col: rgba(168, 85, 247, 0.04);
+  --highlight-box: rgba(168, 85, 247, 0.07);
+  --highlight-row-pulse: rgba(168, 85, 247, 0.08);
+  --highlight-col-pulse: rgba(168, 85, 247, 0.08);
+  --highlight-box-pulse: rgba(168, 85, 247, 0.13);
   --highlight-active: rgba(168, 85, 247, 0.18);     /* Target selected cell */
   --highlight-same-num: rgba(168, 85, 247, 0.28);   /* Other cells with identical number */
   
@@ -62,6 +68,12 @@
   --cell-bg-error: rgba(220, 38, 38, 0.16);
   
   --highlight-group: rgba(124, 58, 237, 0.05);
+  --highlight-row: rgba(124, 58, 237, 0.03);
+  --highlight-col: rgba(124, 58, 237, 0.03);
+  --highlight-box: rgba(124, 58, 237, 0.06);
+  --highlight-row-pulse: rgba(124, 58, 237, 0.07);
+  --highlight-col-pulse: rgba(124, 58, 237, 0.07);
+  --highlight-box-pulse: rgba(124, 58, 237, 0.11);
   --highlight-active: rgba(124, 58, 237, 0.14);
   --highlight-same-num: rgba(124, 58, 237, 0.24);
   
@@ -487,7 +499,37 @@ body {
 
 /* Highlights */
 .sudoku-cell.highlight-group {
-  background-color: var(--highlight-group);
+  transition: background-color 0.25s ease;
+}
+
+.sudoku-cell.highlight-row {
+  background-color: var(--highlight-row);
+  animation: breathe-row 3s ease-in-out infinite alternate;
+}
+
+.sudoku-cell.highlight-col {
+  background-color: var(--highlight-col);
+  animation: breathe-col 3s ease-in-out infinite alternate;
+}
+
+.sudoku-cell.highlight-box {
+  background-color: var(--highlight-box);
+  animation: breathe-box 3s ease-in-out infinite alternate;
+}
+
+@keyframes breathe-row {
+  0% { background-color: var(--highlight-row); }
+  100% { background-color: var(--highlight-row-pulse); }
+}
+
+@keyframes breathe-col {
+  0% { background-color: var(--highlight-col); }
+  100% { background-color: var(--highlight-col-pulse); }
+}
+
+@keyframes breathe-box {
+  0% { background-color: var(--highlight-box); }
+  100% { background-color: var(--highlight-box-pulse); }
 }
 
 .sudoku-cell.highlight-same-num {
@@ -497,6 +539,49 @@ body {
 .sudoku-cell.selected {
   background-color: var(--highlight-active) !important;
   box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Counters Panel */
+.counters-panel {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+:root[data-theme="light"] .counters-panel {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.counter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.counter-item strong {
+  font-size: 15px;
+  color: var(--text-main);
+  display: inline-block;
+}
+
+/* Add a brief scaling pop animation when a counter updates */
+.counter-pop {
+  animation: counterPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes counterPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); color: var(--accent); }
+  100% { transform: scale(1); }
 }
 
 /* Controls Column */

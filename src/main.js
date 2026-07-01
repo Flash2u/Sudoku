@@ -15,6 +15,11 @@ let timerInterval = null;
 let secondsElapsed = 0;
 let isPaused = false;
 
+// Game Stats Counters
+let errorCount = 0;
+let eraserCount = 0;
+let hintCount = 0;
+
 // Active filter (when no cell is selected, clicking a number highlights that number)
 let activeNumberFilter = null;
 
@@ -66,6 +71,42 @@ document.addEventListener('DOMContentLoaded', () => {
     showDifficultyModal();
   }
 });
+
+// --- COUNTER MANAGEMENT ---
+function updateCountersUI(shouldAnimate = true) {
+  const errEl = document.getElementById('count-errors');
+  const eraEl = document.getElementById('count-erasures');
+  const hntEl = document.getElementById('count-hints');
+
+  if (errEl) {
+    const oldVal = parseInt(errEl.textContent) || 0;
+    errEl.textContent = errorCount;
+    if (shouldAnimate && errorCount > oldVal) {
+      triggerPopAnimation(errEl);
+    }
+  }
+  if (eraEl) {
+    const oldVal = parseInt(eraEl.textContent) || 0;
+    eraEl.textContent = eraserCount;
+    if (shouldAnimate && eraserCount > oldVal) {
+      triggerPopAnimation(eraEl);
+    }
+  }
+  if (hntEl) {
+    const oldVal = parseInt(hntEl.textContent) || 0;
+    hntEl.textContent = hintCount;
+    if (shouldAnimate && hintCount > oldVal) {
+      triggerPopAnimation(hntEl);
+    }
+  }
+}
+
+function triggerPopAnimation(el) {
+  el.classList.remove('counter-pop');
+  // force reflow
+  void el.offsetWidth;
+  el.classList.add('counter-pop');
+}
 
 // --- THEME MANAGEMENT ---
 function initTheme() {
@@ -190,6 +231,12 @@ function startNewGame(difficulty) {
   btnNote.classList.remove('active');
   btnNote.querySelector('.tool-text').textContent = '筆記 (關)';
   
+  // Reset Counters
+  errorCount = 0;
+  eraserCount = 0;
+  hintCount = 0;
+  updateCountersUI(false);
+  
   // Set difficulty badge
   const diffLabels = {
     easy: '簡單 (Easy)',
@@ -234,6 +281,13 @@ function resetGame() {
     activeNumberFilter = null;
     secondsElapsed = 0;
     timerEl.textContent = '00:00';
+    
+    // Reset Counters
+    errorCount = 0;
+    eraserCount = 0;
+    hintCount = 0;
+    updateCountersUI(false);
+    
     renderBoard();
     updateNumpadCounts();
     updateUndoRedoButtons();
@@ -248,7 +302,10 @@ function saveCurrentGame() {
     board: board.serialize(),
     secondsElapsed,
     isPaused,
-    showErrors
+    showErrors,
+    errorCount,
+    eraserCount,
+    hintCount
   };
   localStorage.setItem(STORAGE_GAME_KEY, JSON.stringify(gameState));
 }
@@ -264,6 +321,12 @@ function tryLoadGame() {
     isPaused = gameState.isPaused;
     showErrors = gameState.showErrors !== undefined ? gameState.showErrors : true;
     
+    // Restore counters
+    errorCount = gameState.errorCount || 0;
+    eraserCount = gameState.eraserCount || 0;
+    hintCount = gameState.hintCount || 0;
+    updateCountersUI(false);
+
     // Restore UI switch
     toggleErrors.checked = showErrors;
 
@@ -339,6 +402,15 @@ function renderBoard() {
         (Math.floor(r / 3) === Math.floor(selectedRow / 3) && Math.floor(c / 3) === Math.floor(selectedCol / 3))
       ) {
         cellEl.classList.add('highlight-group');
+        if (r === selectedRow) {
+          cellEl.classList.add('highlight-row');
+        }
+        if (c === selectedCol) {
+          cellEl.classList.add('highlight-col');
+        }
+        if (Math.floor(r / 3) === Math.floor(selectedRow / 3) && Math.floor(c / 3) === Math.floor(selectedCol / 3)) {
+          cellEl.classList.add('highlight-box');
+        }
       }
 
       // Highlight same number
@@ -530,6 +602,12 @@ function handleInputNumber(val) {
     if (isNoteMode) {
       board.toggleNote(selectedRow, selectedCol, val);
     } else {
+      const correctVal = board.solution[selectedRow][selectedCol];
+      const prevVal = board.getValue(selectedRow, selectedCol);
+      if (val !== correctVal && val !== prevVal) {
+        errorCount++;
+        updateCountersUI();
+      }
       board.setCellValue(selectedRow, selectedCol, val);
     }
     
@@ -557,6 +635,8 @@ function handleInputNumber(val) {
 function eraseSelectedCell() {
   if (selectedRow !== -1 && selectedCol !== -1) {
     if (board.clearCell(selectedRow, selectedCol)) {
+      eraserCount++;
+      updateCountersUI();
       renderBoard();
       updateNumpadCounts();
       updateUndoRedoButtons();
@@ -588,6 +668,8 @@ function applyHint() {
   timerEl.textContent = formatTime(secondsElapsed);
 
   // Set the correct value
+  hintCount++;
+  updateCountersUI();
   board.setCellValue(selectedRow, selectedCol, correctVal);
   renderBoard();
   updateNumpadCounts();
