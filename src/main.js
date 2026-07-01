@@ -9,6 +9,7 @@ let selectedRow = -1;
 let selectedCol = -1;
 let isNoteMode = false;
 let showErrors = true;
+let showSoleCandidateHint = true;
 
 // Timer State
 let timerInterval = null;
@@ -37,6 +38,7 @@ const btnReset = document.getElementById('btn-reset');
 const btnStats = document.getElementById('btn-stats');
 const themeToggle = document.getElementById('theme-toggle');
 const toggleErrors = document.getElementById('toggle-errors');
+const toggleSoleCandidate = document.getElementById('toggle-sole-candidate');
 const btnHelp = document.getElementById('btn-help');
 
 // Modals
@@ -249,6 +251,7 @@ function startNewGame(difficulty) {
   // Generate Sudoku
   const { puzzle, solution } = generateSudoku(difficulty);
   board = new Board(puzzle, solution, difficulty);
+  window.board = board;
 
   // Reset Timer
   secondsElapsed = 0;
@@ -303,6 +306,7 @@ function saveCurrentGame() {
     secondsElapsed,
     isPaused,
     showErrors,
+    showSoleCandidateHint,
     errorCount,
     eraserCount,
     hintCount
@@ -317,9 +321,11 @@ function tryLoadGame() {
   try {
     const gameState = JSON.parse(savedData);
     board = Board.deserialize(gameState.board);
+    window.board = board;
     secondsElapsed = gameState.secondsElapsed;
     isPaused = gameState.isPaused;
     showErrors = gameState.showErrors !== undefined ? gameState.showErrors : true;
+    showSoleCandidateHint = gameState.showSoleCandidateHint !== undefined ? gameState.showSoleCandidateHint : true;
     
     // Restore counters
     errorCount = gameState.errorCount || 0;
@@ -327,8 +333,9 @@ function tryLoadGame() {
     hintCount = gameState.hintCount || 0;
     updateCountersUI(false);
 
-    // Restore UI switch
+    // Restore UI switches
     toggleErrors.checked = showErrors;
+    toggleSoleCandidate.checked = showSoleCandidateHint;
 
     // Restore difficulty badge
     const diffLabels = {
@@ -537,6 +544,11 @@ function bindEvents() {
     saveCurrentGame();
   });
 
+  toggleSoleCandidate.addEventListener('change', (e) => {
+    showSoleCandidateHint = e.target.checked;
+    saveCurrentGame();
+  });
+
   // Keyboard navigation & inputs
   document.addEventListener('keydown', handleKeyDown);
 
@@ -577,6 +589,93 @@ function bindEvents() {
   themeToggle.addEventListener('click', toggleTheme);
 }
 
+function findMissingNumber(arr) {
+  for (let i = 1; i <= 9; i++) {
+    if (!arr.includes(i)) return i;
+  }
+  return 0;
+}
+
+function checkAndAutoFillSoleCandidate(r, c) {
+  if (!board || r === -1 || c === -1) return;
+  if (board.getValue(r, c) !== 0 || board.isClue(r, c)) return;
+
+  // Row check
+  let rowVals = [];
+  let rowEmptyCount = 0;
+  for (let col = 0; col < 9; col++) {
+    const val = board.getValue(r, col);
+    if (val !== 0) {
+      rowVals.push(val);
+    } else {
+      rowEmptyCount++;
+    }
+  }
+
+  // Column check
+  let colVals = [];
+  let colEmptyCount = 0;
+  for (let row = 0; row < 9; row++) {
+    const val = board.getValue(row, c);
+    if (val !== 0) {
+      colVals.push(val);
+    } else {
+      colEmptyCount++;
+    }
+  }
+
+  // Box check
+  let boxVals = [];
+  let boxEmptyCount = 0;
+  const startRow = 3 * Math.floor(r / 3);
+  const startCol = 3 * Math.floor(c / 3);
+  for (let row = startRow; row < startRow + 3; row++) {
+    for (let col = startCol; col < startCol + 3; col++) {
+      const val = board.getValue(row, col);
+      if (val !== 0) {
+        boxVals.push(val);
+      } else {
+        boxEmptyCount++;
+      }
+    }
+  }
+
+  let autoFilledVal = 0;
+
+  if (rowEmptyCount === 1) {
+    const uniqueRowVals = [...new Set(rowVals)];
+    if (uniqueRowVals.length === 8) {
+      autoFilledVal = findMissingNumber(uniqueRowVals);
+    }
+  }
+
+  if (autoFilledVal === 0 && colEmptyCount === 1) {
+    const uniqueColVals = [...new Set(colVals)];
+    if (uniqueColVals.length === 8) {
+      autoFilledVal = findMissingNumber(uniqueColVals);
+    }
+  }
+
+  if (autoFilledVal === 0 && boxEmptyCount === 1) {
+    const uniqueBoxVals = [...new Set(boxVals)];
+    if (uniqueBoxVals.length === 8) {
+      autoFilledVal = findMissingNumber(uniqueBoxVals);
+    }
+  }
+
+  if (autoFilledVal !== 0) {
+    board.setCellValue(r, c, autoFilledVal);
+    renderBoard();
+    updateNumpadCounts();
+    updateUndoRedoButtons();
+    saveCurrentGame();
+
+    if (board.checkWin()) {
+      handleWin();
+    }
+  }
+}
+
 function selectCell(r, c) {
   if (selectedRow === r && selectedCol === c) {
     // Deselect if clicking already selected
@@ -587,6 +686,10 @@ function selectCell(r, c) {
     selectedRow = r;
     selectedCol = c;
     activeNumberFilter = null; // Clear filter when cell is selected
+    
+    if (showSoleCandidateHint) {
+      checkAndAutoFillSoleCandidate(r, c);
+    }
   }
   
   // Highlight active number in pad

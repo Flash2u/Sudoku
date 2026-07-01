@@ -42,7 +42,12 @@
               <button id="btn-pause" class="pause-btn" title="暫停遊戲">⏸️</button>
             </div>
           </div>
-          <div class="status-right">
+          <div class="status-right" style="display: flex; gap: 16px; align-items: center;">
+            <label class="toggle-switch" title="唯一解提示開關">
+              <input type="checkbox" id="toggle-sole-candidate" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">唯一解提示</span>
+            </label>
             <label class="toggle-switch" title="即時錯誤提示開關">
               <input type="checkbox" id="toggle-errors" checked>
               <span class="toggle-slider"></span>
@@ -165,7 +170,7 @@
             </ul>
             
             <div class="help-footer" style="margin-top: 16px; border-top: 1px solid var(--border-thin); padding-top: 12px; font-size: 11px; color: var(--text-muted); text-align: right; line-height: 1.5;">
-              <div>版本：v1.2</div>
+              <div>版本：v1.3</div>
               <div>製作日期：2026-07-01</div>
             </div>
           </div>
