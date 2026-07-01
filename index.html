@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sub Sudoku - 現代極致數獨遊戲</title>
+    <!-- Google Fonts for modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Background Decorative Blobs -->
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+
+      <!-- Main Game Container -->
+      <main class="game-container">
+        
+        <!-- Header: Title and Theme Toggle -->
+        <header class="game-header">
+          <div class="logo-area">
+            <span class="logo-icon">🧩</span>
+            <h1>Sub Sudoku</h1>
+          </div>
+          <div class="header-controls">
+            <button id="btn-help" class="icon-btn" title="遊戲說明">ℹ️</button>
+            <button id="btn-stats" class="icon-btn" title="歷史統計">📊</button>
+            <button id="theme-toggle" class="icon-btn" title="切換主題">🌙</button>
+          </div>
+        </header>
+
+        <!-- Status Panel: Timer, Difficulty, Settings -->
+        <div class="status-panel">
+          <div class="status-left">
+            <span id="label-difficulty" class="badge">中等 (Medium)</span>
+            <div class="timer-area">
+              <span class="timer-icon">⏱️</span>
+              <span id="timer">00:00</span>
+              <button id="btn-pause" class="pause-btn" title="暫停遊戲">⏸️</button>
+            </div>
+          </div>
+          <div class="status-right">
+            <label class="toggle-switch" title="即時錯誤提示開關">
+              <input type="checkbox" id="toggle-errors" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">即時錯誤</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Play Area (Board + Controls) -->
+        <div class="play-area">
+          
+          <!-- Sudoku Grid Container -->
+          <div class="board-container">
+            <div id="sudoku-board" class="sudoku-board" tabIndex="0">
+              <!-- Cells will be generated here by JavaScript -->
+            </div>
+            
+            <!-- Pause Overlay -->
+            <div id="pause-overlay" class="overlay hidden">
+              <div class="overlay-content">
+                <span class="overlay-icon">⏸️</span>
+                <h2>遊戲已暫停</h2>
+                <p>點擊下方按鈕繼續遊玩</p>
+                <button id="btn-resume" class="btn btn-primary">繼續遊戲</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls and Inputs Column -->
+          <div class="controls-container">
+            
+            <!-- Tools Row (Undo, Redo, Eraser, Note, Hint) -->
+            <div class="tools-row">
+              <button id="btn-undo" class="tool-btn" title="復原 (U)" disabled>
+                <span class="tool-icon">↩️</span>
+                <span class="tool-text">復原</span>
+              </button>
+              <button id="btn-redo" class="tool-btn" title="重做" disabled>
+                <span class="tool-icon">↪️</span>
+                <span class="tool-text">重做</span>
+              </button>
+              <button id="btn-eraser" class="tool-btn" title="橡皮擦 (Backspace / Delete)">
+                <span class="tool-icon">🧹</span>
+                <span class="tool-text">擦除</span>
+              </button>
+              <button id="btn-note" class="tool-btnToggle" title="筆記模式 (N)">
+                <span class="tool-icon">✏️</span>
+                <span class="tool-text">筆記 (關)</span>
+              </button>
+              <button id="btn-hint" class="tool-btn" title="提示 (H)">
+                <span class="tool-icon">💡</span>
+                <span class="tool-text">提示</span>
+              </button>
+            </div>
+
+            <!-- Number Selector (1-9 Buttons) -->
+            <div class="numpad">
+              <!-- 1-9 buttons will have a remaining badge -->
+              <button class="num-btn" data-value="1">1<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="2">2<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="3">3<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="4">4<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="5">5<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="6">6<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="7">7<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="8">8<span class="badge-count">0</span></button>
+              <button class="num-btn" data-value="9">9<span class="badge-count">0</span></button>
+            </div>
+
+            <!-- Action Buttons (New Game, Reset) -->
+            <div class="actions-row">
+              <button id="btn-new-game" class="btn btn-primary">新遊戲</button>
+              <button id="btn-reset" class="btn btn-secondary">重來</button>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+
+      <!-- MODALS -->
+
+      <!-- Help / Instructions Modal -->
+      <div id="modal-help" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2>如何遊玩數獨？</h2>
+          <div class="help-content">
+            <p class="help-intro">數獨（Sudoku）是一個基於邏輯的數字填寫遊戲。目標是在 9x9 的網格中填入 1 到 9 的數字，並滿足以下規則：</p>
+            <ul class="help-rules">
+              <li><strong>列規則：</strong>每一橫列的 9 個格子內，1 至 9 的數字均只能出現一次。</li>
+              <li><strong>行規則：</strong>每一直行的 9 個格子內，1 至 9 的數字均只能出現一次。</li>
+              <li><strong>九宮格規則：</strong>每個 3x3 的粗線方格（共 9 個）內，1 至 9 的數字均只能出現一次。</li>
+            </ul>
+            
+            <h3>快捷鍵與操作說明</h3>
+            <ul class="help-shortcuts">
+              <li><strong>方向鍵 (↑↓←→)：</strong>移動選取格子。</li>
+              <li><strong>數字鍵 (1-9)：</strong>在選中格子中填值或編輯筆記。</li>
+              <li><strong>Backspace / Delete：</strong>擦除所選格子的內容。</li>
+              <li><strong>N 鍵：</strong>切換「筆記（Pencil）模式」。</li>
+              <li><strong>U 鍵：</strong>復原上一步。</li>
+              <li><strong>R 鍵：</strong>重做下一步。</li>
+              <li><strong>Esc 鍵：</strong>取消選擇格子或關閉彈出視窗。</li>
+            </ul>
+          </div>
+          <button id="btn-close-help" class="btn btn-secondary" style="margin-top: 16px; width: 100%;">我知道了</button>
+        </div>
+      </div>
+
+      <!-- Difficulty Selection Modal -->
+      <div id="modal-difficulty" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2>選擇遊戲難度</h2>
+          <p>數獨拼圖將會依據您選的難度動態生成</p>
+          <div class="difficulty-options">
+            <button class="diff-opt-btn" data-difficulty="easy">
+              <span class="diff-title">簡單 (Easy)</span>
+              <span class="diff-desc">適合新手，提供大約 40 個已知數字</span>
+            </button>
+            <button class="diff-opt-btn" data-difficulty="medium">
+              <span class="diff-title">中等 (Medium)</span>
+              <span class="diff-desc">適合日常挑戰，提供大約 33 個已知數字</span>
+            </button>
+            <button class="diff-opt-btn" data-difficulty="hard">
+              <span class="diff-title">困難 (Hard)</span>
+              <span class="diff-desc">考驗排除法邏輯，提供大約 27 個已知數字</span>
+            </button>
+            <button class="diff-opt-btn" data-difficulty="expert">
+              <span class="diff-title">專家 (Expert)</span>
+              <span class="diff-desc">極具挑戰，僅提供大約 22 個已知數字</span>
+            </button>
+          </div>
+          <button id="btn-close-difficulty" class="btn btn-secondary modal-close-btn">取消</button>
+        </div>
+      </div>
+
+      <!-- Stats Modal -->
+      <div id="modal-stats" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2>歷史統計數據</h2>
+          <div class="stats-grid">
+            <div class="stats-item">
+              <span class="stats-val" id="stats-total-wins">0</span>
+              <span class="stats-label">總獲勝數</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-val" id="stats-total-games">0</span>
+              <span class="stats-label">總遊玩數</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-val" id="stats-win-rate">0%</span>
+              <span class="stats-label">勝率</span>
+            </div>
+          </div>
+          
+          <h3>各難度最佳時間</h3>
+          <div class="difficulty-stats">
+            <div class="diff-stat-row">
+              <span>簡單 (Easy)</span>
+              <strong id="best-easy">--:--</strong>
+            </div>
+            <div class="diff-stat-row">
+              <span>中等 (Medium)</span>
+              <strong id="best-medium">--:--</strong>
+            </div>
+            <div class="diff-stat-row">
+              <span>困難 (Hard)</span>
+              <strong id="best-hard">--:--</strong>
+            </div>
+            <div class="diff-stat-row">
+              <span>專家 (Expert)</span>
+              <strong id="best-expert">--:--</strong>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button id="btn-clear-stats" class="btn btn-danger">清除數據</button>
+            <button id="btn-close-stats" class="btn btn-secondary">關閉</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Won Modal -->
+      <div id="modal-won" class="modal-overlay hidden">
+        <div class="modal-card won-card">
+          <span class="won-trophy">🏆</span>
+          <h2>恭喜通關！</h2>
+          <p>您成功解開了這個數獨拼圖！</p>
+          
+          <div class="victory-details">
+            <div class="vic-row">
+              <span>挑戰難度：</span>
+              <strong id="won-difficulty">中等</strong>
+            </div>
+            <div class="vic-row">
+              <span>通關時間：</span>
+              <strong id="won-time">05:43</strong>
+            </div>
+            <div class="vic-row" id="won-new-record" class="hidden">
+              <span class="record-badge">🆕 新紀錄！</span>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button id="btn-won-new" class="btn btn-primary">再玩一局</button>
+            <button id="btn-won-close" class="btn btn-secondary">查看棋盤</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

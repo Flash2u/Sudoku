@@ -1,0 +1,810 @@
+import './style.css';
+import confetti from 'canvas-confetti';
+import { generateSudoku } from './sudokuGenerator.js';
+import { Board } from './board.js';
+
+// --- GAME STATE ---
+let board = null;
+let selectedRow = -1;
+let selectedCol = -1;
+let isNoteMode = false;
+let showErrors = true;
+
+// Timer State
+let timerInterval = null;
+let secondsElapsed = 0;
+let isPaused = false;
+
+// Active filter (when no cell is selected, clicking a number highlights that number)
+let activeNumberFilter = null;
+
+// --- DOM ELEMENTS ---
+const sudokuBoardEl = document.getElementById('sudoku-board');
+const btnUndo = document.getElementById('btn-undo');
+const btnRedo = document.getElementById('btn-redo');
+const btnEraser = document.getElementById('btn-eraser');
+const btnNote = document.getElementById('btn-note');
+const btnHint = document.getElementById('btn-hint');
+const btnPause = document.getElementById('btn-pause');
+const btnResume = document.getElementById('btn-resume');
+const btnNewGame = document.getElementById('btn-new-game');
+const btnReset = document.getElementById('btn-reset');
+const btnStats = document.getElementById('btn-stats');
+const themeToggle = document.getElementById('theme-toggle');
+const toggleErrors = document.getElementById('toggle-errors');
+const btnHelp = document.getElementById('btn-help');
+
+// Modals
+const modalHelp = document.getElementById('modal-help');
+const btnCloseHelp = document.getElementById('btn-close-help');
+const modalDifficulty = document.getElementById('modal-difficulty');
+const btnCloseDifficulty = document.getElementById('btn-close-difficulty');
+const modalStats = document.getElementById('modal-stats');
+const btnCloseStats = document.getElementById('btn-close-stats');
+const btnClearStats = document.getElementById('btn-clear-stats');
+const modalWon = document.getElementById('modal-won');
+const btnWonNew = document.getElementById('btn-won-new');
+const btnWonClose = document.getElementById('btn-won-close');
+const pauseOverlay = document.getElementById('pause-overlay');
+
+// Text/Labels
+const labelDifficulty = document.getElementById('label-difficulty');
+const timerEl = document.getElementById('timer');
+
+// --- LOCAL STORAGE KEYS ---
+const STORAGE_GAME_KEY = 'sub_sudoku_active_game';
+const STORAGE_STATS_KEY = 'sub_sudoku_stats';
+const STORAGE_THEME_KEY = 'sub_sudoku_theme';
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initStats();
+  bindEvents();
+  
+  if (!tryLoadGame()) {
+    showDifficultyModal();
+  }
+});
+
+// --- THEME MANAGEMENT ---
+function initTheme() {
+  const savedTheme = localStorage.getItem(STORAGE_THEME_KEY) || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem(STORAGE_THEME_KEY, newTheme);
+  updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+// --- STATS MANAGEMENT ---
+function initStats() {
+  if (!localStorage.getItem(STORAGE_STATS_KEY)) {
+    const initialStats = {
+      totalGames: 0,
+      totalWins: 0,
+      bestTimes: {
+        easy: null,
+        medium: null,
+        hard: null,
+        expert: null
+      }
+    };
+    localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(initialStats));
+  }
+}
+
+function getStats() {
+  return JSON.parse(localStorage.getItem(STORAGE_STATS_KEY));
+}
+
+function saveStats(stats) {
+  localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats));
+}
+
+function updateStatsUI() {
+  const stats = getStats();
+  document.getElementById('stats-total-games').textContent = stats.totalGames;
+  document.getElementById('stats-total-wins').textContent = stats.totalWins;
+  
+  const winRate = stats.totalGames > 0 ? Math.round((stats.totalWins / stats.totalGames) * 100) : 0;
+  document.getElementById('stats-win-rate').textContent = `${winRate}%`;
+
+  const difficulties = ['easy', 'medium', 'hard', 'expert'];
+  difficulties.forEach(diff => {
+    const el = document.getElementById(`best-${diff}`);
+    const time = stats.bestTimes[diff];
+    el.textContent = time ? formatTime(time) : '--:--';
+  });
+}
+
+function clearStats() {
+  if (confirm('您確定要清除所有的歷史統計數據嗎？這項操作無法復原。')) {
+    const clearedStats = {
+      totalGames: 0,
+      totalWins: 0,
+      bestTimes: {
+        easy: null,
+        medium: null,
+        hard: null,
+        expert: null
+      }
+    };
+    saveStats(clearedStats);
+    updateStatsUI();
+  }
+}
+
+// --- TIMER FUNCTIONALITY ---
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (!isPaused) {
+      secondsElapsed++;
+      timerEl.textContent = formatTime(secondsElapsed);
+      if (secondsElapsed % 5 === 0) {
+        saveCurrentGame(); // Auto-save progress every 5 seconds
+      }
+    }
+  }, 1000);
+}
+
+function pauseGame() {
+  if (!board || isPaused) return;
+  isPaused = true;
+  btnPause.textContent = '▶️';
+  btnPause.title = '繼續遊戲';
+  pauseOverlay.classList.remove('hidden');
+}
+
+function resumeGame() {
+  if (!board || !isPaused) return;
+  isPaused = false;
+  btnPause.textContent = '⏸️';
+  btnPause.title = '暫停遊戲';
+  pauseOverlay.classList.add('hidden');
+}
+
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+// --- GAME LIFECYCLE ---
+function startNewGame(difficulty) {
+  // Reset UI and state
+  selectedRow = -1;
+  selectedCol = -1;
+  isNoteMode = false;
+  activeNumberFilter = null;
+  btnNote.classList.remove('active');
+  btnNote.querySelector('.tool-text').textContent = '筆記 (關)';
+  
+  // Set difficulty badge
+  const diffLabels = {
+    easy: '簡單 (Easy)',
+    medium: '中等 (Medium)',
+    hard: '困難 (Hard)',
+    expert: '專家 (Expert)'
+  };
+  labelDifficulty.textContent = diffLabels[difficulty] || difficulty;
+
+  // Generate Sudoku
+  const { puzzle, solution } = generateSudoku(difficulty);
+  board = new Board(puzzle, solution, difficulty);
+
+  // Reset Timer
+  secondsElapsed = 0;
+  timerEl.textContent = '00:00';
+  isPaused = false;
+  btnPause.textContent = '⏸️';
+  pauseOverlay.classList.add('hidden');
+
+  // Stats increment
+  const stats = getStats();
+  stats.totalGames++;
+  saveStats(stats);
+
+  // Render & Start
+  renderBoard();
+  updateNumpadCounts();
+  updateUndoRedoButtons();
+  startTimer();
+  saveCurrentGame();
+
+  modalDifficulty.classList.add('hidden');
+}
+
+function resetGame() {
+  if (!board) return;
+  if (confirm('您確定要將棋盤回復到初始狀態嗎？所有的填寫進度與筆記將會被清除。')) {
+    board = new Board(board.initialBoard, board.solution, board.difficulty);
+    selectedRow = -1;
+    selectedCol = -1;
+    activeNumberFilter = null;
+    secondsElapsed = 0;
+    timerEl.textContent = '00:00';
+    renderBoard();
+    updateNumpadCounts();
+    updateUndoRedoButtons();
+    saveCurrentGame();
+  }
+}
+
+// --- SAVE AND LOAD GAME ---
+function saveCurrentGame() {
+  if (!board) return;
+  const gameState = {
+    board: board.serialize(),
+    secondsElapsed,
+    isPaused,
+    showErrors
+  };
+  localStorage.setItem(STORAGE_GAME_KEY, JSON.stringify(gameState));
+}
+
+function tryLoadGame() {
+  const savedData = localStorage.getItem(STORAGE_GAME_KEY);
+  if (!savedData) return false;
+
+  try {
+    const gameState = JSON.parse(savedData);
+    board = Board.deserialize(gameState.board);
+    secondsElapsed = gameState.secondsElapsed;
+    isPaused = gameState.isPaused;
+    showErrors = gameState.showErrors !== undefined ? gameState.showErrors : true;
+    
+    // Restore UI switch
+    toggleErrors.checked = showErrors;
+
+    // Restore difficulty badge
+    const diffLabels = {
+      easy: '簡單 (Easy)',
+      medium: '中等 (Medium)',
+      hard: '困難 (Hard)',
+      expert: '專家 (Expert)'
+    };
+    labelDifficulty.textContent = diffLabels[board.difficulty] || board.difficulty;
+
+    timerEl.textContent = formatTime(secondsElapsed);
+    
+    renderBoard();
+    updateNumpadCounts();
+    updateUndoRedoButtons();
+
+    if (isPaused) {
+      btnPause.textContent = '▶️';
+      pauseOverlay.classList.remove('hidden');
+    } else {
+      btnPause.textContent = '⏸️';
+      pauseOverlay.classList.add('hidden');
+    }
+    
+    startTimer();
+    return true;
+  } catch (e) {
+    console.error('Failed to parse saved game state:', e);
+    localStorage.removeItem(STORAGE_GAME_KEY);
+    return false;
+  }
+}
+
+// --- BOARD RENDERING ---
+function renderBoard() {
+  sudokuBoardEl.innerHTML = '';
+  
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cellEl = document.createElement('div');
+      cellEl.className = 'sudoku-cell';
+      cellEl.dataset.row = r;
+      cellEl.dataset.col = c;
+      
+      const val = board.getValue(r, c);
+      const isClue = board.isClue(r, c);
+      
+      // Determine Cell Style Classes
+      if (isClue) {
+        cellEl.classList.add('clue');
+      } else if (val !== 0) {
+        cellEl.classList.add('user-value');
+      }
+
+      // Conflict/Error highlight
+      if (val !== 0 && !isClue) {
+        if (showErrors && !board.isCorrect(r, c)) {
+          cellEl.classList.add('error');
+        } else if (board.hasConflict(r, c, val)) {
+          // Highlight syntax duplicate conflicts
+          cellEl.classList.add('error');
+        }
+      }
+
+      // Highlight Selection and Context
+      if (r === selectedRow && c === selectedCol) {
+        cellEl.classList.add('selected');
+      } else if (
+        r === selectedRow || 
+        c === selectedCol || 
+        (Math.floor(r / 3) === Math.floor(selectedRow / 3) && Math.floor(c / 3) === Math.floor(selectedCol / 3))
+      ) {
+        cellEl.classList.add('highlight-group');
+      }
+
+      // Highlight same number
+      let highlightNum = 0;
+      if (selectedRow !== -1 && selectedCol !== -1) {
+        highlightNum = board.getValue(selectedRow, selectedCol);
+      } else if (activeNumberFilter !== null) {
+        highlightNum = activeNumberFilter;
+      }
+
+      if (highlightNum !== 0 && val === highlightNum) {
+        cellEl.classList.add('highlight-same-num');
+      }
+
+      // Set Cell Content
+      if (val !== 0) {
+        const valEl = document.createElement('div');
+        valEl.className = 'cell-value';
+        valEl.textContent = val;
+        cellEl.appendChild(valEl);
+      } else {
+        // Render Pencil Notes grid
+        const notesGridEl = document.createElement('div');
+        notesGridEl.className = 'cell-notes';
+        const cellNotes = board.getNotes(r, c);
+        
+        for (let i = 1; i <= 9; i++) {
+          const noteEl = document.createElement('span');
+          noteEl.className = 'note-digit';
+          if (cellNotes.has(i)) {
+            noteEl.classList.add('active');
+            noteEl.textContent = i;
+          }
+          notesGridEl.appendChild(noteEl);
+        }
+        cellEl.appendChild(notesGridEl);
+      }
+
+      sudokuBoardEl.appendChild(cellEl);
+    }
+  }
+}
+
+// --- INTERACTIVE EVENT BINDINGS ---
+function bindEvents() {
+  // Cell selection Click
+  sudokuBoardEl.addEventListener('click', (e) => {
+    if (isPaused) return;
+    const cell = e.target.closest('.sudoku-cell');
+    if (!cell) return;
+
+    const r = parseInt(cell.dataset.row);
+    const c = parseInt(cell.dataset.col);
+
+    selectCell(r, c);
+  });
+
+  // Numpad clicks
+  document.querySelector('.numpad').addEventListener('click', (e) => {
+    if (isPaused || !board) return;
+    const btn = e.target.closest('.num-btn');
+    if (!btn || btn.classList.contains('completed')) return;
+
+    const val = parseInt(btn.dataset.value);
+    handleInputNumber(val);
+  });
+
+  // Tools Actions
+  btnUndo.addEventListener('click', () => {
+    if (isPaused || !board) return;
+    if (board.undo()) {
+      renderBoard();
+      updateNumpadCounts();
+      updateUndoRedoButtons();
+      saveCurrentGame();
+    }
+  });
+
+  btnRedo.addEventListener('click', () => {
+    if (isPaused || !board) return;
+    if (board.redo()) {
+      renderBoard();
+      updateNumpadCounts();
+      updateUndoRedoButtons();
+      saveCurrentGame();
+    }
+  });
+
+  btnEraser.addEventListener('click', () => {
+    if (isPaused || !board) return;
+    eraseSelectedCell();
+  });
+
+  btnNote.addEventListener('click', () => {
+    isNoteMode = !isNoteMode;
+    btnNote.classList.toggle('active', isNoteMode);
+    btnNote.querySelector('.tool-text').textContent = `筆記 (${isNoteMode ? '開' : '關'})`;
+  });
+
+  btnHint.addEventListener('click', () => {
+    if (isPaused || !board) return;
+    applyHint();
+  });
+
+  // Pause / Resume
+  btnPause.addEventListener('click', () => {
+    if (isPaused) resumeGame();
+    else pauseGame();
+  });
+
+  btnResume.addEventListener('click', resumeGame);
+
+  // New Game Dialog
+  btnNewGame.addEventListener('click', showDifficultyModal);
+  btnCloseDifficulty.addEventListener('click', () => modalDifficulty.classList.add('hidden'));
+
+  // Reset Board
+  btnReset.addEventListener('click', resetGame);
+
+  // Settings
+  toggleErrors.addEventListener('change', (e) => {
+    showErrors = e.target.checked;
+    renderBoard();
+    saveCurrentGame();
+  });
+
+  // Keyboard navigation & inputs
+  document.addEventListener('keydown', handleKeyDown);
+
+  // Difficulty selection clicks
+  document.querySelector('.difficulty-options').addEventListener('click', (e) => {
+    const btn = e.target.closest('.diff-opt-btn');
+    if (!btn) return;
+    const diff = btn.dataset.difficulty;
+    startNewGame(diff);
+  });
+
+  // Stats Modal
+  btnStats.addEventListener('click', () => {
+    updateStatsUI();
+    modalStats.classList.remove('hidden');
+  });
+  btnCloseStats.addEventListener('click', () => modalStats.classList.add('hidden'));
+  btnClearStats.addEventListener('click', clearStats);
+
+  // Help Modal
+  btnHelp.addEventListener('click', () => {
+    modalHelp.classList.remove('hidden');
+  });
+  btnCloseHelp.addEventListener('click', () => {
+    modalHelp.classList.add('hidden');
+  });
+
+  // Game Won Modal
+  btnWonNew.addEventListener('click', () => {
+    modalWon.classList.add('hidden');
+    showDifficultyModal();
+  });
+  btnWonClose.addEventListener('click', () => {
+    modalWon.classList.add('hidden');
+  });
+
+  // Theme Toggle
+  themeToggle.addEventListener('click', toggleTheme);
+}
+
+function selectCell(r, c) {
+  if (selectedRow === r && selectedCol === c) {
+    // Deselect if clicking already selected
+    selectedRow = -1;
+    selectedCol = -1;
+    activeNumberFilter = null;
+  } else {
+    selectedRow = r;
+    selectedCol = c;
+    activeNumberFilter = null; // Clear filter when cell is selected
+  }
+  
+  // Highlight active number in pad
+  updateActiveFilterUI();
+  renderBoard();
+}
+
+function handleInputNumber(val) {
+  if (selectedRow !== -1 && selectedCol !== -1) {
+    const isClue = board.isClue(selectedRow, selectedCol);
+    if (isClue) return;
+
+    if (isNoteMode) {
+      board.toggleNote(selectedRow, selectedCol, val);
+    } else {
+      board.setCellValue(selectedRow, selectedCol, val);
+    }
+    
+    renderBoard();
+    updateNumpadCounts();
+    updateUndoRedoButtons();
+    saveCurrentGame();
+
+    // Check if the board is solved
+    if (board.checkWin()) {
+      handleWin();
+    }
+  } else {
+    // Number filtering mode (no cell is selected)
+    if (activeNumberFilter === val) {
+      activeNumberFilter = null; // Toggle off filter
+    } else {
+      activeNumberFilter = val;
+    }
+    updateActiveFilterUI();
+    renderBoard();
+  }
+}
+
+function eraseSelectedCell() {
+  if (selectedRow !== -1 && selectedCol !== -1) {
+    if (board.clearCell(selectedRow, selectedCol)) {
+      renderBoard();
+      updateNumpadCounts();
+      updateUndoRedoButtons();
+      saveCurrentGame();
+    }
+  }
+}
+
+function applyHint() {
+  if (selectedRow === -1 || selectedCol === -1) {
+    alert('請先在棋盤上選擇一個空白的格子，再點擊「提示」！');
+    return;
+  }
+
+  if (board.isClue(selectedRow, selectedCol)) {
+    return;
+  }
+
+  const correctVal = board.solution[selectedRow][selectedCol];
+  const currentVal = board.getValue(selectedRow, selectedCol);
+
+  if (currentVal === correctVal) {
+    alert('此格子填寫的數字已經是正確的囉！');
+    return;
+  }
+
+  // 20-second penalty for using hint
+  secondsElapsed += 20;
+  timerEl.textContent = formatTime(secondsElapsed);
+
+  // Set the correct value
+  board.setCellValue(selectedRow, selectedCol, correctVal);
+  renderBoard();
+  updateNumpadCounts();
+  updateUndoRedoButtons();
+  saveCurrentGame();
+
+  if (board.checkWin()) {
+    handleWin();
+  }
+}
+
+function updateActiveFilterUI() {
+  const numBtns = document.querySelectorAll('.num-btn');
+  numBtns.forEach(btn => {
+    const val = parseInt(btn.dataset.value);
+    if (activeNumberFilter === val && selectedRow === -1) {
+      btn.classList.add('active-filter');
+    } else {
+      btn.classList.remove('active-filter');
+    }
+  });
+}
+
+function updateNumpadCounts() {
+  if (!board) return;
+  const counts = board.getNumberCounts();
+  const numBtns = document.querySelectorAll('.num-btn');
+  
+  numBtns.forEach(btn => {
+    const val = parseInt(btn.dataset.value);
+    const count = counts[val];
+    const remaining = 9 - count;
+    
+    const badge = btn.querySelector('.badge-count');
+    badge.textContent = remaining > 0 ? remaining : '';
+
+    if (remaining <= 0) {
+      btn.classList.add('completed');
+    } else {
+      btn.classList.remove('completed');
+    }
+  });
+}
+
+function updateUndoRedoButtons() {
+  if (!board) return;
+  btnUndo.disabled = board.history.length === 0;
+  btnRedo.disabled = board.redoHistory.length === 0;
+}
+
+// Keyboard key handler
+function handleKeyDown(e) {
+  if (isPaused || !board) return;
+  
+  // Ignore keyboard actions if user is focused inside input elements (none currently, but standard practice)
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Modals open ignore game keybinds
+  if (!modalDifficulty.classList.contains('hidden') || 
+      !modalStats.classList.contains('hidden') || 
+      !modalHelp.classList.contains('hidden') ||
+      !modalWon.classList.contains('hidden')) {
+    if (e.key === 'Escape') {
+      modalDifficulty.classList.add('hidden');
+      modalStats.classList.add('hidden');
+      modalHelp.classList.add('hidden');
+      modalWon.classList.add('hidden');
+    }
+    return;
+  }
+
+  // 1-9 inputs
+  if (e.key >= '1' && e.key <= '9') {
+    handleInputNumber(parseInt(e.key));
+    e.preventDefault();
+  }
+  
+  // Clear/Erase
+  else if (e.key === 'Backspace' || e.key === 'Delete') {
+    eraseSelectedCell();
+    e.preventDefault();
+  }
+
+  // Undo (Ctrl+Z or U)
+  else if ((e.ctrlKey && e.key === 'z') || e.key === 'u' || e.key === 'U') {
+    if (board.undo()) {
+      renderBoard();
+      updateNumpadCounts();
+      updateUndoRedoButtons();
+      saveCurrentGame();
+    }
+    e.preventDefault();
+  }
+
+  // Redo (Ctrl+Y or Shift+Ctrl+Z or R)
+  else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z') || e.key === 'r' || e.key === 'R') {
+    if (board.redo()) {
+      renderBoard();
+      updateNumpadCounts();
+      updateUndoRedoButtons();
+      saveCurrentGame();
+    }
+    e.preventDefault();
+  }
+
+  // Note mode toggle (N)
+  else if (e.key === 'n' || e.key === 'N') {
+    isNoteMode = !isNoteMode;
+    btnNote.classList.toggle('active', isNoteMode);
+    btnNote.querySelector('.tool-text').textContent = `筆記 (${isNoteMode ? '開' : '關'})`;
+    e.preventDefault();
+  }
+
+  // Hint (H)
+  else if (e.key === 'h' || e.key === 'H') {
+    applyHint();
+    e.preventDefault();
+  }
+
+  // Arrow key navigation
+  else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    if (selectedRow === -1 || selectedCol === -1) {
+      selectedRow = 4;
+      selectedCol = 4;
+    } else {
+      if (e.key === 'ArrowUp') selectedRow = (selectedRow - 1 + 9) % 9;
+      if (e.key === 'ArrowDown') selectedRow = (selectedRow + 1) % 9;
+      if (e.key === 'ArrowLeft') selectedCol = (selectedCol - 1 + 9) % 9;
+      if (e.key === 'ArrowRight') selectedCol = (selectedCol + 1) % 9;
+    }
+    activeNumberFilter = null;
+    updateActiveFilterUI();
+    renderBoard();
+    e.preventDefault();
+  }
+
+  // Escape to deselect
+  else if (e.key === 'Escape') {
+    selectedRow = -1;
+    selectedCol = -1;
+    activeNumberFilter = null;
+    updateActiveFilterUI();
+    renderBoard();
+    e.preventDefault();
+  }
+}
+
+// --- WIN SCENE ---
+function handleWin() {
+  clearInterval(timerInterval);
+  
+  // Clear saved game
+  localStorage.removeItem(STORAGE_GAME_KEY);
+
+  // Update statistics
+  const stats = getStats();
+  stats.totalWins++;
+  
+  const currentBest = stats.bestTimes[board.difficulty];
+  let isNewRecord = false;
+  if (currentBest === null || secondsElapsed < currentBest) {
+    stats.bestTimes[board.difficulty] = secondsElapsed;
+    isNewRecord = true;
+  }
+  
+  saveStats(stats);
+
+  // Trigger Fireworks/Confetti!
+  triggerConfetti();
+
+  // Populate Victory Modal
+  const diffNames = {
+    easy: '簡單 (Easy)',
+    medium: '中等 (Medium)',
+    hard: '困難 (Hard)',
+    expert: '專家 (Expert)'
+  };
+  document.getElementById('won-difficulty').textContent = diffNames[board.difficulty] || board.difficulty;
+  document.getElementById('won-time').textContent = formatTime(secondsElapsed);
+  
+  const recordEl = document.getElementById('won-new-record');
+  if (isNewRecord) {
+    recordEl.classList.remove('hidden');
+  } else {
+    recordEl.classList.add('hidden');
+  }
+
+  // Display Modal after a short delay
+  setTimeout(() => {
+    modalWon.classList.remove('hidden');
+  }, 1000);
+}
+
+function triggerConfetti() {
+  const duration = 3 * 1000;
+  const end = Date.now() + duration;
+
+  (function frame() {
+    confetti({
+      particleCount: 5,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 }
+    });
+    confetti({
+      particleCount: 5,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 }
+    });
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame);
+    }
+  }());
+}
+
+function showDifficultyModal() {
+  modalDifficulty.classList.remove('hidden');
+}
