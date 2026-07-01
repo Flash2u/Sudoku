@@ -1,6 +1,6 @@
 ﻿import './style.css';
 import confetti from 'canvas-confetti';
-import { generateSudoku } from './sudokuGenerator.js';
+import { generateSudoku, solveSudoku } from './sudokuGenerator.js';
 import { Board } from './board.js';
 
 // --- GAME STATE ---
@@ -10,6 +10,8 @@ let selectedCol = -1;
 let isNoteMode = false;
 let showErrors = true;
 let showSoleCandidateHint = true;
+let showAutoNotes = false;
+let checkedErrorCells = new Set();
 
 // Timer State
 let timerInterval = null;
@@ -39,7 +41,10 @@ const btnStats = document.getElementById('btn-stats');
 const themeToggle = document.getElementById('theme-toggle');
 const toggleErrors = document.getElementById('toggle-errors');
 const toggleSoleCandidate = document.getElementById('toggle-sole-candidate');
+const toggleAutoNotes = document.getElementById('toggle-auto-notes');
 const btnHelp = document.getElementById('btn-help');
+const btnShare = document.getElementById('btn-share');
+const btnCheck = document.getElementById('btn-check');
 
 // Modals
 const modalHelp = document.getElementById('modal-help');
@@ -69,10 +74,107 @@ document.addEventListener('DOMContentLoaded', () => {
   initStats();
   bindEvents();
   
-  if (!tryLoadGame()) {
+  // Parse query parameters for shared level
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedPuzzleStr = urlParams.get('puzzle');
+  const sharedDiff = urlParams.get('difficulty') || 'medium';
+
+  let sharedLoaded = false;
+  if (sharedPuzzleStr && sharedPuzzleStr.length === 81 && /^[0-9]+$/.test(sharedPuzzleStr)) {
+    try {
+      const puzzle = [];
+      for (let i = 0; i < 9; i++) {
+        const row = [];
+        for (let j = 0; j < 9; j++) {
+          row.push(parseInt(sharedPuzzleStr[i * 9 + j]));
+        }
+        puzzle.push(row);
+      }
+
+      const solution = solveSudoku(puzzle);
+      if (solution) {
+        board = new Board(puzzle, solution, sharedDiff);
+        window.board = board;
+
+        selectedRow = -1;
+        selectedCol = -1;
+        isNoteMode = false;
+        activeNumberFilter = null;
+        errorCount = 0;
+        eraserCount = 0;
+        hintCount = 0;
+        updateCountersUI(false);
+        secondsElapsed = 0;
+        timerEl.textContent = '00:00';
+        isPaused = false;
+        btnPause.textContent = '⏸️';
+        pauseOverlay.classList.add('hidden');
+
+        const diffLabels = {
+          easy: '🐱 簡單 (Easy)',
+          medium: '🐶 中等 (Medium)',
+          hard: '🐯 困難 (Hard)',
+          expert: '🧙‍♂️ 專家 (Expert)'
+        };
+        labelDifficulty.textContent = diffLabels[sharedDiff] || sharedDiff;
+
+        renderBoard();
+        updateNumpadCounts();
+        updateUndoRedoButtons();
+        startTimer();
+        saveCurrentGame();
+
+        sharedLoaded = true;
+        showToast('已成功加載分享的數獨關卡！', 'success');
+
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } else {
+        showToast('加載失敗：該數獨無解。', 'warning');
+      }
+    } catch (e) {
+      console.error('Error loading shared puzzle:', e);
+      showToast('分享關卡解析錯誤。', 'warning');
+    }
+  }
+
+  if (!sharedLoaded && !tryLoadGame()) {
     showDifficultyModal();
   }
 });
+
+// --- TOAST NOTIFICATIONS ---
+function showToast(message, type = 'info') {
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  let icon = 'ℹ️';
+  if (type === 'success') icon = '✅';
+  else if (type === 'warning') icon = '⚠️';
+
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-message">${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.style.transform = 'translateY(-20px)';
+    toast.style.opacity = '0';
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
+}
 
 // --- COUNTER MANAGEMENT ---
 function updateCountersUI(shouldAnimate = true) {
@@ -131,7 +233,8 @@ function updateThemeIcon(theme) {
 
 // --- STATS MANAGEMENT ---
 function initStats() {
-  if (!localStorage.getItem(STORAGE_STATS_KEY)) {
+  const stored = localStorage.getItem(STORAGE_STATS_KEY);
+  if (!stored) {
     const initialStats = {
       totalGames: 0,
       totalWins: 0,
@@ -140,9 +243,34 @@ function initStats() {
         medium: null,
         hard: null,
         expert: null
+      },
+      difficultyStats: {
+        easy: { games: 0, wins: 0 },
+        medium: { games: 0, wins: 0 },
+        hard: { games: 0, wins: 0 },
+        expert: { games: 0, wins: 0 }
       }
     };
     localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(initialStats));
+  } else {
+    try {
+      const stats = JSON.parse(stored);
+      let updated = false;
+      if (!stats.difficultyStats) {
+        stats.difficultyStats = {
+          easy: { games: 0, wins: 0 },
+          medium: { games: 0, wins: 0 },
+          hard: { games: 0, wins: 0 },
+          expert: { games: 0, wins: 0 }
+        };
+        updated = true;
+      }
+      if (updated) {
+        localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats));
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -164,9 +292,26 @@ function updateStatsUI() {
 
   const difficulties = ['easy', 'medium', 'hard', 'expert'];
   difficulties.forEach(diff => {
-    const el = document.getElementById(`best-${diff}`);
-    const time = stats.bestTimes[diff];
-    el.textContent = time ? formatTime(time) : '--:--';
+    const bestEl = document.getElementById(`best-${diff}`);
+    if (bestEl) {
+      const time = stats.bestTimes[diff];
+      bestEl.textContent = time ? formatTime(time) : '--:--';
+    }
+    
+    const diffStat = stats.difficultyStats ? stats.difficultyStats[diff] : { games: 0, wins: 0 };
+    const games = diffStat.games || 0;
+    const wins = diffStat.wins || 0;
+    const rate = games > 0 ? Math.round((wins / games) * 100) : 0;
+    
+    const gamesWinsEl = document.getElementById(`stats-games-${diff}`);
+    if (gamesWinsEl) {
+      gamesWinsEl.textContent = `${games} / ${wins}`;
+    }
+    
+    const rateEl = document.getElementById(`stats-rate-${diff}`);
+    if (rateEl) {
+      rateEl.textContent = `${rate}%`;
+    }
   });
 }
 
@@ -180,6 +325,12 @@ function clearStats() {
         medium: null,
         hard: null,
         expert: null
+      },
+      difficultyStats: {
+        easy: { games: 0, wins: 0 },
+        medium: { games: 0, wins: 0 },
+        hard: { games: 0, wins: 0 },
+        expert: { games: 0, wins: 0 }
       }
     };
     saveStats(clearedStats);
@@ -263,6 +414,9 @@ function startNewGame(difficulty) {
   // Stats increment
   const stats = getStats();
   stats.totalGames++;
+  if (stats.difficultyStats && stats.difficultyStats[difficulty]) {
+    stats.difficultyStats[difficulty].games++;
+  }
   saveStats(stats);
 
   // Render & Start
@@ -307,6 +461,7 @@ function saveCurrentGame() {
     isPaused,
     showErrors,
     showSoleCandidateHint,
+    showAutoNotes,
     errorCount,
     eraserCount,
     hintCount
@@ -326,6 +481,7 @@ function tryLoadGame() {
     isPaused = gameState.isPaused;
     showErrors = gameState.showErrors !== undefined ? gameState.showErrors : true;
     showSoleCandidateHint = gameState.showSoleCandidateHint !== undefined ? gameState.showSoleCandidateHint : true;
+    showAutoNotes = gameState.showAutoNotes !== undefined ? gameState.showAutoNotes : false;
     
     // Restore counters
     errorCount = gameState.errorCount || 0;
@@ -336,6 +492,16 @@ function tryLoadGame() {
     // Restore UI switches
     toggleErrors.checked = showErrors;
     toggleSoleCandidate.checked = showSoleCandidateHint;
+    toggleAutoNotes.checked = showAutoNotes;
+    if (showAutoNotes) {
+      isNoteMode = false;
+      btnNote.disabled = true;
+      btnNote.classList.remove('active');
+      btnNote.querySelector('.tool-text').textContent = '筆記 (自動)';
+    } else {
+      btnNote.disabled = false;
+      btnNote.querySelector('.tool-text').textContent = `筆記 (${isNoteMode ? '開' : '關'})`;
+    }
 
     // Restore difficulty badge
     const diffLabels = {
@@ -371,6 +537,9 @@ function tryLoadGame() {
 
 // --- BOARD RENDERING ---
 function renderBoard() {
+  if (board && showAutoNotes) {
+    board.populateAllAutoNotes();
+  }
   sudokuBoardEl.innerHTML = '';
   
   for (let r = 0; r < 9; r++) {
@@ -392,11 +561,15 @@ function renderBoard() {
 
       // Conflict/Error highlight
       if (val !== 0 && !isClue) {
+        const key = `${r},${c}`;
         if (showErrors && !board.isCorrect(r, c)) {
           cellEl.classList.add('error');
         } else if (board.hasConflict(r, c, val)) {
           // Highlight syntax duplicate conflicts
           cellEl.classList.add('error');
+        } else if (checkedErrorCells.has(key)) {
+          cellEl.classList.add('error');
+          cellEl.classList.add('shake-error');
         }
       }
 
@@ -588,6 +761,98 @@ function bindEvents() {
     modalWon.classList.add('hidden');
   });
 
+  // Auto Notes Toggle
+  toggleAutoNotes.addEventListener('change', (e) => {
+    showAutoNotes = e.target.checked;
+    if (showAutoNotes) {
+      isNoteMode = false;
+      btnNote.disabled = true;
+      btnNote.classList.remove('active');
+      btnNote.querySelector('.tool-text').textContent = '筆記 (自動)';
+      if (board) {
+        board.populateAllAutoNotes();
+      }
+    } else {
+      btnNote.disabled = false;
+      btnNote.querySelector('.tool-text').textContent = `筆記 (${isNoteMode ? '開' : '關'})`;
+    }
+    renderBoard();
+    saveCurrentGame();
+  });
+
+  // Share level
+  btnShare.addEventListener('click', () => {
+    if (!board) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('puzzle', board.initialBoard.flat().join(''));
+    url.searchParams.set('difficulty', board.difficulty);
+    const urlStr = url.toString();
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(urlStr).then(() => {
+        showToast('關卡連結已複製到剪貼簿！分享給好友來挑戰吧！', 'success');
+      }).catch(err => {
+        fallbackCopyText(urlStr);
+      });
+    } else {
+      fallbackCopyText(urlStr);
+    }
+  });
+
+  function fallbackCopyText(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        showToast('關卡連結已複製到剪貼簿！分享給好友來挑戰吧！', 'success');
+      } else {
+        showToast('複製連結失敗，請手動複製網址。', 'warning');
+      }
+    } catch (err) {
+      showToast('複製連結失敗，請手動複製網址。', 'warning');
+    }
+    document.body.removeChild(textArea);
+  }
+
+  // Check Board
+  btnCheck.addEventListener('click', () => {
+    if (isPaused || !board) return;
+
+    const incorrects = [];
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const val = board.getValue(r, c);
+        if (val !== 0 && !board.isClue(r, c) && !board.isCorrect(r, c)) {
+          incorrects.push(`${r},${c}`);
+        }
+      }
+    }
+
+    if (incorrects.length > 0) {
+      checkedErrorCells = new Set(incorrects);
+      renderBoard();
+      showToast(`發現了 ${incorrects.length} 處錯誤！已為您標出。`, 'warning');
+
+      setTimeout(() => {
+        if (checkedErrorCells.size > 0) {
+          checkedErrorCells.clear();
+          renderBoard();
+        }
+      }, 3000);
+    } else {
+      checkedErrorCells.clear();
+      renderBoard();
+      showToast('沒有發現任何錯誤，非常完美！', 'success');
+    }
+  });
+
   // Theme Toggle
   themeToggle.addEventListener('click', toggleTheme);
 }
@@ -680,6 +945,10 @@ function checkAndAutoFillSoleCandidate(r, c) {
 }
 
 function selectCell(r, c) {
+  if (checkedErrorCells.size > 0) {
+    checkedErrorCells.clear();
+  }
+
   if (selectedRow === r && selectedCol === c) {
     // Deselect if clicking already selected
     selectedRow = -1;
@@ -701,6 +970,9 @@ function selectCell(r, c) {
 }
 
 function handleInputNumber(val) {
+  if (checkedErrorCells.size > 0) {
+    checkedErrorCells.clear();
+  }
   if (selectedRow !== -1 && selectedCol !== -1) {
     const isClue = board.isClue(selectedRow, selectedCol);
     if (isClue) return;
@@ -739,6 +1011,9 @@ function handleInputNumber(val) {
 }
 
 function eraseSelectedCell() {
+  if (checkedErrorCells.size > 0) {
+    checkedErrorCells.clear();
+  }
   if (selectedRow !== -1 && selectedCol !== -1) {
     if (board.clearCell(selectedRow, selectedCol)) {
       eraserCount++;
@@ -928,9 +1203,13 @@ function handleKeyDown(e) {
 
   // Note mode toggle (N)
   else if (e.key === 'n' || e.key === 'N') {
-    isNoteMode = !isNoteMode;
-    btnNote.classList.toggle('active', isNoteMode);
-    btnNote.querySelector('.tool-text').textContent = `筆記 (${isNoteMode ? '開' : '關'})`;
+    if (showAutoNotes) {
+      showToast('自動筆記模式已開啟，無法手動修改筆記。', 'warning');
+    } else {
+      isNoteMode = !isNoteMode;
+      btnNote.classList.toggle('active', isNoteMode);
+      btnNote.querySelector('.tool-text').textContent = `筆記 (${isNoteMode ? '開' : '關'})`;
+    }
     e.preventDefault();
   }
 
@@ -978,6 +1257,9 @@ function handleWin() {
   // Update statistics
   const stats = getStats();
   stats.totalWins++;
+  if (stats.difficultyStats && stats.difficultyStats[board.difficulty]) {
+    stats.difficultyStats[board.difficulty].wins++;
+  }
   
   const currentBest = stats.bestTimes[board.difficulty];
   let isNewRecord = false;

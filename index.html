@@ -26,6 +26,7 @@
             <h1>數獨遊戲</h1>
           </div>
           <div class="header-controls">
+            <button id="btn-share" class="icon-btn" title="分享關卡">🔗</button>
             <button id="btn-help" class="icon-btn" title="遊戲說明">ℹ️</button>
             <button id="btn-stats" class="icon-btn" title="歷史統計">📊</button>
             <button id="theme-toggle" class="icon-btn" title="切換主題">🌙</button>
@@ -43,6 +44,11 @@
             </div>
           </div>
           <div class="status-right" style="display: flex; gap: 16px; align-items: center;">
+            <label class="toggle-switch" title="自動填寫筆記開關">
+              <input type="checkbox" id="toggle-auto-notes">
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">自動筆記</span>
+            </label>
             <label class="toggle-switch" title="唯一解提示開關">
               <input type="checkbox" id="toggle-sole-candidate" checked>
               <span class="toggle-slider"></span>
@@ -117,6 +123,10 @@
                 <span class="tool-icon">💡</span>
                 <span class="tool-text">提示</span>
               </button>
+              <button id="btn-check" class="tool-btn" title="手動檢查盤面">
+                <span class="tool-icon">🔍</span>
+                <span class="tool-text">檢查</span>
+              </button>
             </div>
 
             <!-- Number Selector (1-9 Buttons) -->
@@ -170,8 +180,8 @@
             </ul>
             
             <div class="help-footer" style="margin-top: 16px; border-top: 1px solid var(--border-thin); padding-top: 12px; font-size: 11px; color: var(--text-muted); text-align: right; line-height: 1.5;">
-              <div>版本：v1.4</div>
-              <div>製作日期：2026-07-01</div>
+              <div>版本：v1.5</div>
+              <div>製作日期：2026-07-02</div>
             </div>
           </div>
           <button id="btn-close-help" class="btn btn-secondary" style="margin-top: 16px; width: 100%;">我知道了</button>
@@ -219,7 +229,7 @@
 
       <!-- Stats Modal -->
       <div id="modal-stats" class="modal-overlay hidden">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width: 420px;">
           <h2>歷史統計數據</h2>
           <div class="stats-grid">
             <div class="stats-item">
@@ -236,27 +246,45 @@
             </div>
           </div>
           
-          <h3>各難度最佳時間</h3>
-          <div class="difficulty-stats">
-            <div class="diff-stat-row">
-              <span>簡單 (Easy)</span>
-              <strong id="best-easy">--:--</strong>
-            </div>
-            <div class="diff-stat-row">
-              <span>中等 (Medium)</span>
-              <strong id="best-medium">--:--</strong>
-            </div>
-            <div class="diff-stat-row">
-              <span>困難 (Hard)</span>
-              <strong id="best-hard">--:--</strong>
-            </div>
-            <div class="diff-stat-row">
-              <span>專家 (Expert)</span>
-              <strong id="best-expert">--:--</strong>
-            </div>
-          </div>
+          <h3 style="margin-top: 20px;">各難度詳細數據</h3>
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>難度</th>
+                <th style="text-align: center;">遊玩 / 獲勝</th>
+                <th style="text-align: center;">勝率</th>
+                <th style="text-align: right;">最佳時間</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>🐱 簡單</td>
+                <td style="text-align: center;" id="stats-games-easy">0 / 0</td>
+                <td style="text-align: center;" id="stats-rate-easy">0%</td>
+                <td style="text-align: right; font-weight: 600;" id="best-easy">--:--</td>
+              </tr>
+              <tr>
+                <td>🐶 中等</td>
+                <td style="text-align: center;" id="stats-games-medium">0 / 0</td>
+                <td style="text-align: center;" id="stats-rate-medium">0%</td>
+                <td style="text-align: right; font-weight: 600;" id="best-medium">--:--</td>
+              </tr>
+              <tr>
+                <td>🐯 困難</td>
+                <td style="text-align: center;" id="stats-games-hard">0 / 0</td>
+                <td style="text-align: center;" id="stats-rate-hard">0%</td>
+                <td style="text-align: right; font-weight: 600;" id="best-hard">--:--</td>
+              </tr>
+              <tr>
+                <td>🧙‍♂️ 專家</td>
+                <td style="text-align: center;" id="stats-games-expert">0 / 0</td>
+                <td style="text-align: center;" id="stats-rate-expert">0%</td>
+                <td style="text-align: right; font-weight: 600;" id="best-expert">--:--</td>
+              </tr>
+            </tbody>
+          </table>
 
-          <div class="modal-actions">
+          <div class="modal-actions" style="margin-top: 24px;">
             <button id="btn-clear-stats" class="btn btn-danger">清除數據</button>
             <button id="btn-close-stats" class="btn btn-secondary">關閉</button>
           </div>

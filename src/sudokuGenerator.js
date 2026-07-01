@@ -285,3 +285,49 @@ export function generateSudoku(difficulty = 'medium') {
     solution
   };
 }
+
+/**
+ * Solves a Sudoku puzzle and returns the solved grid, or null if unsolvable.
+ */
+export function solveSudoku(grid) {
+  let solvedGrid = null;
+
+  function backtrack(g) {
+    let minPoss = 10;
+    let bestRow = -1;
+    let bestCol = -1;
+    let bestVals = [];
+
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (g[r][c] === 0) {
+          const vals = getPossibleValues(g, r, c);
+          if (vals.length < minPoss) {
+            minPoss = vals.length;
+            bestRow = r;
+            bestCol = c;
+            bestVals = vals;
+          }
+        }
+      }
+    }
+
+    if (bestRow === -1) {
+      solvedGrid = g.map(row => [...row]);
+      return true;
+    }
+
+    if (minPoss === 0) return false;
+
+    for (let val of bestVals) {
+      g[bestRow][bestCol] = val;
+      if (backtrack(g)) return true;
+      g[bestRow][bestCol] = 0;
+    }
+    return false;
+  }
+
+  const gridCopy = grid.map(row => [...row]);
+  backtrack(gridCopy);
+  return solvedGrid;
+}

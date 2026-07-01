@@ -292,6 +292,57 @@ export class Board {
     return counts;
   }
 
+  // Get all valid candidates (1-9) for a cell based on current board state
+  getValidCandidates(row, col) {
+    if (this.currentBoard[row][col] !== 0) return [];
+
+    const used = new Set();
+
+    // Row
+    for (let c = 0; c < 9; c++) {
+      const val = this.currentBoard[row][c];
+      if (val !== 0) used.add(val);
+    }
+
+    // Col
+    for (let r = 0; r < 9; r++) {
+      const val = this.currentBoard[r][col];
+      if (val !== 0) used.add(val);
+    }
+
+    // Box
+    const startRow = 3 * Math.floor(row / 3);
+    const startCol = 3 * Math.floor(col / 3);
+    for (let r = startRow; r < startRow + 3; r++) {
+      for (let c = startCol; c < startCol + 3; c++) {
+        const val = this.currentBoard[r][c];
+        if (val !== 0) used.add(val);
+      }
+    }
+
+    const candidates = [];
+    for (let v = 1; v <= 9; v++) {
+      if (!used.has(v)) {
+        candidates.push(v);
+      }
+    }
+    return candidates;
+  }
+
+  // Populate auto notes for all empty cells
+  populateAllAutoNotes() {
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (this.currentBoard[r][c] === 0) {
+          const candidates = this.getValidCandidates(r, c);
+          this.notes[r][c] = new Set(candidates);
+        } else {
+          this.notes[r][c].clear();
+        }
+      }
+    }
+  }
+
   // Serialize board state for storage
   serialize() {
     return {
