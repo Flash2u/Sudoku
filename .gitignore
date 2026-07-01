@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -25,3 +25,6 @@ dist-ssr
 
 # Whitelist modify.log
 !modify.log
+
+# Project specifications
+GEMINI.md
