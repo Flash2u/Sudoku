@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sudoku Board State Manager
  */
 
@@ -271,6 +271,20 @@ export class Board {
       for (let c = 0; c < 9; c++) {
         const val = this.currentBoard[r][c];
         if (val !== 0) {
+          counts[val]++;
+        }
+      }
+    }
+    return counts;
+  }
+
+  // Count how many times each number 1-9 is CORRECTLY placed on the board
+  getCorrectNumberCounts() {
+    const counts = Array(10).fill(0);
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const val = this.currentBoard[r][c];
+        if (val !== 0 && val === this.solution[r][c]) {
           counts[val]++;
         }
       }

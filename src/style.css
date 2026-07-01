@@ -1,4 +1,4 @@
-/* ----------------------------------------------------
+﻿/* ----------------------------------------------------
    Modern Premium Sudoku Styling
    Design System, Dark/Light Themes, Glassmorphism, Micro-interactions
 ---------------------------------------------------- */
@@ -722,16 +722,24 @@ body {
 }
 
 .num-btn.completed {
-  opacity: 0.25;
+  opacity: 0.45;
   background: rgba(255, 255, 255, 0.02) !important;
   border-color: var(--glass-border) !important;
   color: var(--text-muted) !important;
   cursor: default;
 }
 
-.num-btn.completed .badge-count {
-  background: transparent;
-  color: transparent;
+.num-btn.invalid-candidate {
+  opacity: 0.22;
+  transition: opacity 0.2s ease;
+}
+
+.badge-count.completed-badge {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* Action Buttons (New game, Reset) */

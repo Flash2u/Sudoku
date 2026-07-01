@@ -1,4 +1,4 @@
-import './style.css';
+﻿import './style.css';
 import confetti from 'canvas-confetti';
 import { generateSudoku } from './sudokuGenerator.js';
 import { Board } from './board.js';
@@ -459,6 +459,9 @@ function renderBoard() {
       sudokuBoardEl.appendChild(cellEl);
     }
   }
+
+  // Update candidate highlight on numpad
+  updateNumpadCandidates();
 }
 
 // --- INTERACTIVE EVENT BINDINGS ---
@@ -798,7 +801,7 @@ function updateActiveFilterUI() {
 
 function updateNumpadCounts() {
   if (!board) return;
-  const counts = board.getNumberCounts();
+  const counts = board.getCorrectNumberCounts();
   const numBtns = document.querySelectorAll('.num-btn');
   
   numBtns.forEach(btn => {
@@ -807,12 +810,57 @@ function updateNumpadCounts() {
     const remaining = 9 - count;
     
     const badge = btn.querySelector('.badge-count');
-    badge.textContent = remaining > 0 ? remaining : '';
-
+    
     if (remaining <= 0) {
       btn.classList.add('completed');
+      badge.textContent = '✓';
+      badge.classList.add('completed-badge');
     } else {
       btn.classList.remove('completed');
+      badge.textContent = remaining;
+      badge.classList.remove('completed-badge');
+    }
+  });
+}
+
+function updateNumpadCandidates() {
+  const numBtns = document.querySelectorAll('.num-btn');
+  
+  if (selectedRow === -1 || selectedCol === -1 || !board || board.isClue(selectedRow, selectedCol)) {
+    numBtns.forEach(btn => btn.classList.remove('invalid-candidate'));
+    return;
+  }
+
+  const invalidNumbers = new Set();
+  
+  // 1. Check Row
+  for (let col = 0; col < 9; col++) {
+    const val = board.getValue(selectedRow, col);
+    if (val !== 0) invalidNumbers.add(val);
+  }
+
+  // 2. Check Column
+  for (let row = 0; row < 9; row++) {
+    const val = board.getValue(row, selectedCol);
+    if (val !== 0) invalidNumbers.add(val);
+  }
+
+  // 3. Check Box
+  const startRow = 3 * Math.floor(selectedRow / 3);
+  const startCol = 3 * Math.floor(selectedCol / 3);
+  for (let row = startRow; row < startRow + 3; row++) {
+    for (let col = startCol; col < startCol + 3; col++) {
+      const val = board.getValue(row, col);
+      if (val !== 0) invalidNumbers.add(val);
+    }
+  }
+
+  numBtns.forEach(btn => {
+    const val = parseInt(btn.dataset.value);
+    if (invalidNumbers.has(val)) {
+      btn.classList.add('invalid-candidate');
+    } else {
+      btn.classList.remove('invalid-candidate');
     }
   });
 }
