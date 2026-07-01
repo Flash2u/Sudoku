@@ -10,6 +10,7 @@ let selectedCol = -1;
 let isNoteMode = false;
 let showErrors = true;
 let showSoleCandidateHint = true;
+let showCandidateHint = false;
 let showAutoNotes = false;
 let checkedErrorCells = new Set();
 
@@ -41,6 +42,7 @@ const btnStats = document.getElementById('btn-stats');
 const themeToggle = document.getElementById('theme-toggle');
 const toggleErrors = document.getElementById('toggle-errors');
 const toggleSoleCandidate = document.getElementById('toggle-sole-candidate');
+const toggleCandidateHint = document.getElementById('toggle-candidate-hint');
 const toggleAutoNotes = document.getElementById('toggle-auto-notes');
 const btnHelp = document.getElementById('btn-help');
 const btnShare = document.getElementById('btn-share');
@@ -461,6 +463,7 @@ function saveCurrentGame() {
     isPaused,
     showErrors,
     showSoleCandidateHint,
+    showCandidateHint,
     showAutoNotes,
     errorCount,
     eraserCount,
@@ -481,6 +484,7 @@ function tryLoadGame() {
     isPaused = gameState.isPaused;
     showErrors = gameState.showErrors !== undefined ? gameState.showErrors : true;
     showSoleCandidateHint = gameState.showSoleCandidateHint !== undefined ? gameState.showSoleCandidateHint : true;
+    showCandidateHint = gameState.showCandidateHint !== undefined ? gameState.showCandidateHint : false;
     showAutoNotes = gameState.showAutoNotes !== undefined ? gameState.showAutoNotes : false;
     
     // Restore counters
@@ -492,6 +496,7 @@ function tryLoadGame() {
     // Restore UI switches
     toggleErrors.checked = showErrors;
     toggleSoleCandidate.checked = showSoleCandidateHint;
+    toggleCandidateHint.checked = showCandidateHint;
     toggleAutoNotes.checked = showAutoNotes;
     if (showAutoNotes) {
       isNoteMode = false;
@@ -722,6 +727,12 @@ function bindEvents() {
 
   toggleSoleCandidate.addEventListener('change', (e) => {
     showSoleCandidateHint = e.target.checked;
+    saveCurrentGame();
+  });
+
+  toggleCandidateHint.addEventListener('change', (e) => {
+    showCandidateHint = e.target.checked;
+    updateNumpadCandidates();
     saveCurrentGame();
   });
 
@@ -1101,7 +1112,7 @@ function updateNumpadCounts() {
 function updateNumpadCandidates() {
   const numBtns = document.querySelectorAll('.num-btn');
   
-  if (selectedRow === -1 || selectedCol === -1 || !board || board.isClue(selectedRow, selectedCol)) {
+  if (!showCandidateHint || selectedRow === -1 || selectedCol === -1 || !board || board.isClue(selectedRow, selectedCol)) {
     numBtns.forEach(btn => btn.classList.remove('invalid-candidate'));
     return;
   }
