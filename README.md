@@ -2,6 +2,8 @@
 
 一個極致現代、美觀且極其流暢的網頁版數獨遊戲。
 
+👉 **[立即線上遊玩！](https://flash2u.github.io/Sudoku/)**
+
 ## 🎮 遊戲畫面
 
 ![遊戲畫面](public/screenshot.png)
