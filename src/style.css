@@ -187,6 +187,20 @@ body {
   animation: float 4s ease-in-out infinite;
 }
 
+.logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px var(--accent-glow);
+  object-fit: cover;
+  animation: float 4s ease-in-out infinite;
+  transition: transform 0.25s ease;
+}
+
+.logo-img:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
