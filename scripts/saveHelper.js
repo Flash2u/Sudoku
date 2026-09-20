@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 
 const action = process.argv[2];
@@ -56,7 +56,10 @@ function safeWriteWithBOM(filePath, content) {
   try {
     // 2. Prepare UTF-8 BOM buffer
     const bom = Buffer.from([0xEF, 0xBB, 0xBF]);
-    const contentBuffer = Buffer.from(content, 'utf8');
+    let contentBuffer = Buffer.from(content, 'utf8');
+    while (contentBuffer.length >= 3 && contentBuffer[0] === 0xEF && contentBuffer[1] === 0xBB && contentBuffer[2] === 0xBF) {
+      contentBuffer = contentBuffer.subarray(3);
+    }
     const finalBuffer = Buffer.concat([bom, contentBuffer]);
     
     // 3. Write to file
