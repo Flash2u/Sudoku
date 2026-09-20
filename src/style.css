@@ -233,30 +233,29 @@ body {
   transform: translateY(0);
 }
 
-/* Status Panel */
+/* Status Panel (位於右側控制欄頂部) */
 .status-panel {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  background: rgba(0, 0, 0, 0.12);
-  padding: clamp(6px, 1vh, 10px) clamp(12px, 1.5vw, 18px);
-  border-radius: 16px;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 6px 14px;
+  border-radius: 14px;
   border: 1px solid var(--glass-border);
 }
 
 .status-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .badge {
   font-weight: 700;
-  font-size: 14.5px;
-  padding: 6px 16px;
-  border-radius: 20px;
+  font-size: 13.5px;
+  padding: 5px 14px;
+  border-radius: 18px;
   background: var(--accent-light);
   color: var(--accent-hover);
   border: 1px solid rgba(168, 85, 247, 0.35);
@@ -270,20 +269,20 @@ body {
   gap: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  font-size: 21px;
+  font-size: 19px;
   color: var(--text-main);
 }
 
 .timer-icon {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .pause-btn {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 18px;
-  padding: 4px;
+  font-size: 17px;
+  padding: 3px;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -294,11 +293,21 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Switch Toggle (Instant Errors) */
+/* Switches Panel (2x2 緊湊網格) */
+.switches-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  padding: 7px 12px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+}
+
 .toggle-switch {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
 }
@@ -308,8 +317,8 @@ body {
 }
 
 .toggle-slider {
-  width: 46px;
-  height: 25px;
+  width: 38px;
+  height: 22px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 20px;
   position: relative;
@@ -324,8 +333,8 @@ body {
 .toggle-slider::before {
   content: "";
   position: absolute;
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   left: 2px;
   bottom: 2px;
   background-color: var(--text-muted);
@@ -338,29 +347,30 @@ body {
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(21px);
+  transform: translateX(16px);
   background-color: #ffffff;
 }
 
 .toggle-label {
-  font-size: 14.5px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-main);
   white-space: nowrap;
 }
 
-/* Play Area */
+/* Play Area (主遊戲雙欄佈局) */
 .play-area {
   flex: 1;
   min-height: 0;
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: clamp(16px, 2.5vw, 40px);
+  gap: clamp(16px, 2.5vw, 36px);
   width: 100%;
 }
 
-@media (max-width: 880px), (max-height: 580px) {
+@media (max-width: 880px), (max-height: 600px) {
   .play-area {
     flex-direction: column;
     justify-content: center;
@@ -368,16 +378,25 @@ body {
   }
 }
 
-/* Sudoku Board Grid (最大化且靠左) */
+.board-column {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Sudoku Board Grid (最大化紙張感大棋盤) */
 .board-container {
   position: relative;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 3px solid var(--border-thick);
-  background: rgba(0, 0, 0, 0.05);
-  width: clamp(360px, min(63vh, 58vw), 640px);
-  height: clamp(360px, min(63vh, 58vw), 640px);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4);
+  border: 3.5px solid var(--border-thick);
+  background: rgba(255, 255, 255, 0.02);
+  width: clamp(380px, min(80vh, 58vw), 750px);
+  height: clamp(380px, min(80vh, 58vw), 750px);
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
 }
@@ -417,7 +436,7 @@ body {
   border-bottom: 1px solid var(--border-thin);
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: clamp(24px, 4.2vmin, 38px);
+  font-size: clamp(26px, 4.6vmin, 44px);
 }
 
 /* 3x3 Boundaries */
@@ -559,15 +578,15 @@ body {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-/* Counters Panel */
+/* Counters Panel (置於右側控制欄) */
 .counters-panel {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: clamp(6px, 1vh, 8px) 16px;
-  border-radius: 14px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 12px;
+  border-radius: 12px;
   border: 1px solid var(--glass-border);
   margin: 0;
 }
@@ -579,14 +598,14 @@ body {
 .counter-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14.5px;
+  gap: 4px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
 }
 
 .counter-item strong {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--text-main);
   display: inline-block;
@@ -603,22 +622,23 @@ body {
   100% { transform: scale(1); }
 }
 
-/* Controls Column (精準適配右側寬度，空間最大化留給左側棋盤) */
+/* Controls Column (精準適配右側寬度，整合所有功能，空間最大化留給左側棋盤) */
 .controls-container {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: clamp(8px, 1.2vh, 14px);
-  width: clamp(290px, 28vw, 360px);
+  gap: clamp(6px, 1vh, 10px);
+  width: clamp(310px, 30vw, 380px);
   flex: 0 0 auto;
-  height: clamp(360px, min(63vh, 58vw), 640px);
+  height: clamp(380px, min(80vh, 58vw), 750px);
 }
 
-@media (max-width: 880px), (max-height: 580px) {
+@media (max-width: 880px), (max-height: 600px) {
   .controls-container {
     width: 100%;
-    max-width: 360px;
+    max-width: 420px;
     height: auto;
+    gap: 10px;
   }
 }
 
@@ -626,7 +646,7 @@ body {
 .tools-row {
   display: flex;
   justify-content: space-between;
-  gap: clamp(6px, 0.9vw, 10px);
+  gap: 5px;
   width: 100%;
 }
 
@@ -634,15 +654,15 @@ body {
   flex: 1;
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.14);
-  padding: clamp(6px, 1vh, 9px) 4px;
-  min-height: clamp(54px, 6.8vh, 64px);
-  border-radius: 14px;
+  padding: clamp(5px, 0.8vh, 8px) 2px;
+  min-height: clamp(48px, 6vh, 58px);
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
@@ -666,12 +686,12 @@ body {
 }
 
 .tool-icon {
-  font-size: clamp(20px, 2.6vmin, 24px);
+  font-size: 19px;
   line-height: 1;
 }
 
 .tool-text {
-  font-size: clamp(12.5px, 1.6vmin, 14.5px);
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-main);
   white-space: nowrap;
@@ -693,20 +713,21 @@ body {
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(8px, 1.1vmin, 12px);
+  gap: clamp(6px, 1vmin, 10px);
   flex: 1;
+  min-height: 0;
 }
 
 .num-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 1.5px solid var(--glass-border);
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(28px, 3.8vmin, 35px);
+  font-size: clamp(26px, 3.4vmin, 34px);
   font-weight: 800;
   color: var(--text-main);
   height: 100%;
-  min-height: clamp(52px, 6.6vh, 66px);
-  border-radius: 16px;
+  min-height: clamp(48px, 6vh, 66px);
+  border-radius: 14px;
   cursor: pointer;
   position: relative;
   display: flex;
@@ -781,17 +802,17 @@ body {
 /* Action Buttons (New game, Reset) */
 .actions-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
 .btn {
   flex: 1;
   border: none;
-  padding: clamp(10px, 1.4vh, 15px) 20px;
-  font-size: 16.5px;
+  padding: clamp(9px, 1.2vh, 13px) 16px;
+  font-size: 15.5px;
   font-weight: 700;
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;

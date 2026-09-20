@@ -33,80 +33,82 @@
           </div>
         </header>
 
-        <!-- Status Panel: Timer, Difficulty, Settings -->
-        <div class="status-panel">
-          <div class="status-left">
-            <span id="label-difficulty" class="badge">中等 (Medium)</span>
-            <div class="timer-area">
-              <span class="timer-icon">⏱️</span>
-              <span id="timer">00:00</span>
-              <button id="btn-pause" class="pause-btn" title="暫停遊戲">⏸️</button>
-            </div>
-          </div>
-          <div class="status-right" style="display: flex; gap: 16px; align-items: center;">
-            <label class="toggle-switch" title="可填數字提示開關">
-              <input type="checkbox" id="toggle-candidate-hint">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">可填數字提示</span>
-            </label>
-            <label class="toggle-switch" title="自動填寫筆記開關">
-              <input type="checkbox" id="toggle-auto-notes">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">自動筆記</span>
-            </label>
-            <label class="toggle-switch" title="唯一解提示開關">
-              <input type="checkbox" id="toggle-sole-candidate" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">唯一解提示</span>
-            </label>
-            <label class="toggle-switch" title="即時錯誤提示開關">
-              <input type="checkbox" id="toggle-errors" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">即時錯誤</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Game Counters: Errors, Erasures, Hints -->
-        <div class="counters-panel">
-          <div class="counter-item">
-            <span class="counter-icon">❌</span>
-            <span class="counter-text">錯誤次數：<strong id="count-errors">0</strong></span>
-          </div>
-          <div class="counter-item">
-            <span class="counter-icon">🧹</span>
-            <span class="counter-text">擦除次數：<strong id="count-erasures">0</strong></span>
-          </div>
-          <div class="counter-item">
-            <span class="counter-icon">💡</span>
-            <span class="counter-text">提示次數：<strong id="count-hints">0</strong></span>
-          </div>
-        </div>
-
-        <!-- Play Area (Board + Controls) -->
+        <!-- Play Area (Split Layout: Left Giant Board + Right Side Controls) -->
         <div class="play-area">
           
-          <!-- Sudoku Grid Container -->
-          <div class="board-container">
-            <div id="sudoku-board" class="sudoku-board" tabIndex="0">
-              <!-- Cells will be generated here by JavaScript -->
-            </div>
-            
-            <!-- Pause Overlay -->
-            <div id="pause-overlay" class="overlay hidden">
-              <div class="overlay-content">
-                <span class="overlay-icon">⏸️</span>
-                <h2>遊戲已暫停</h2>
-                <p>點擊下方按鈕繼續遊玩</p>
-                <button id="btn-resume" class="btn btn-primary">繼續遊戲</button>
+          <!-- Left Column: Giant Sudoku Paper Board -->
+          <div class="board-column">
+            <div class="board-container">
+              <div id="sudoku-board" class="sudoku-board" tabIndex="0">
+                <!-- Cells will be generated here by JavaScript -->
+              </div>
+              
+              <!-- Pause Overlay -->
+              <div id="pause-overlay" class="overlay hidden">
+                <div class="overlay-content">
+                  <span class="overlay-icon">⏸️</span>
+                  <h2>遊戲已暫停</h2>
+                  <p>點擊下方按鈕繼續遊玩</p>
+                  <button id="btn-resume" class="btn btn-primary">繼續遊戲</button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Controls and Inputs Column -->
+          <!-- Right Column: Integrated Controls & Info Sidebar -->
           <div class="controls-container">
             
-            <!-- Tools Row (Undo, Redo, Eraser, Note, Hint) -->
+            <!-- Row 1: Difficulty Badge & Timer Area -->
+            <div class="status-panel">
+              <span id="label-difficulty" class="badge">中等 (Medium)</span>
+              <div class="timer-area">
+                <span class="timer-icon">⏱️</span>
+                <span id="timer">00:00</span>
+                <button id="btn-pause" class="pause-btn" title="暫停遊戲">⏸️</button>
+              </div>
+            </div>
+
+            <!-- Row 2: Game Counters (Errors, Erasures, Hints) -->
+            <div class="counters-panel">
+              <div class="counter-item">
+                <span class="counter-icon">❌</span>
+                <span class="counter-text">錯誤：<strong id="count-errors">0</strong></span>
+              </div>
+              <div class="counter-item">
+                <span class="counter-icon">🧹</span>
+                <span class="counter-text">擦除：<strong id="count-erasures">0</strong></span>
+              </div>
+              <div class="counter-item">
+                <span class="counter-icon">💡</span>
+                <span class="counter-text">提示：<strong id="count-hints">0</strong></span>
+              </div>
+            </div>
+
+            <!-- Row 3: 4 Feature Switches in 2x2 Grid -->
+            <div class="switches-panel">
+              <label class="toggle-switch" title="可填數字提示開關">
+                <input type="checkbox" id="toggle-candidate-hint">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">可填提示</span>
+              </label>
+              <label class="toggle-switch" title="自動填寫筆記開關">
+                <input type="checkbox" id="toggle-auto-notes">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">自動筆記</span>
+              </label>
+              <label class="toggle-switch" title="唯一解提示開關">
+                <input type="checkbox" id="toggle-sole-candidate" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">唯一解提示</span>
+              </label>
+              <label class="toggle-switch" title="即時錯誤提示開關">
+                <input type="checkbox" id="toggle-errors" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">即時錯誤</span>
+              </label>
+            </div>
+
+            <!-- Row 4: Tools Row (Undo, Redo, Eraser, Note, Hint, Check) -->
             <div class="tools-row">
               <button id="btn-undo" class="tool-btn" title="復原 (U)" disabled>
                 <span class="tool-icon">↩️</span>
@@ -134,9 +136,8 @@
               </button>
             </div>
 
-            <!-- Number Selector (1-9 Buttons) -->
+            <!-- Row 5: 1-9 Numpad -->
             <div class="numpad">
-              <!-- 1-9 buttons will have a remaining badge -->
               <button class="num-btn" data-value="1">1<span class="badge-count">0</span></button>
               <button class="num-btn" data-value="2">2<span class="badge-count">0</span></button>
               <button class="num-btn" data-value="3">3<span class="badge-count">0</span></button>
@@ -148,7 +149,7 @@
               <button class="num-btn" data-value="9">9<span class="badge-count">0</span></button>
             </div>
 
-            <!-- Action Buttons (New Game, Reset) -->
+            <!-- Row 6: Actions (New Game, Reset) -->
             <div class="actions-row">
               <button id="btn-new-game" class="btn btn-primary">新遊戲</button>
               <button id="btn-reset" class="btn btn-secondary">重來</button>
@@ -185,7 +186,7 @@
             </ul>
             
             <div class="help-footer" style="margin-top: 16px; border-top: 1px solid var(--border-thin); padding-top: 12px; font-size: 12px; color: var(--text-muted); text-align: right; line-height: 1.5;">
-              <div>版本：v1.9</div>
+              <div>版本：v2.0</div>
               <div>製作日期：2026-09-21</div>
             </div>
           </div>
