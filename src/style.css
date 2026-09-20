@@ -504,21 +504,25 @@ body {
   grid-template-rows: repeat(3, 1fr);
   width: 100%;
   height: 100%;
-  padding: 3px;
+  padding: 2px;
   box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(10px, 1.4vmin, 13px);
-  font-weight: 600;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: clamp(14px, 2.2vmin, 20px);
+  font-weight: 800;
   line-height: 1;
-  color: var(--text-muted);
+  color: #c4b5fd;
   pointer-events: none;
   z-index: 1;
 }
 
+:root[data-theme="light"] .cell-notes {
+  color: #6d28d9;
+}
+
 @media (max-width: 500px) {
   .cell-notes {
-    font-size: 9px;
-    padding: 2px;
+    font-size: 11px;
+    padding: 1px;
   }
 }
 
@@ -628,7 +632,7 @@ body {
   flex-direction: column;
   justify-content: space-between;
   gap: clamp(6px, 1vh, 10px);
-  width: clamp(310px, 30vw, 380px);
+  width: clamp(320px, 31vw, 390px);
   flex: 0 0 auto;
   height: clamp(380px, min(80vh, 58vw), 750px);
 }
@@ -642,29 +646,28 @@ body {
   }
 }
 
-/* Tools Row Buttons (紅框高亮功能鍵：文字清晰、對比鮮明、放大易讀) */
+/* Tools Row Buttons (重構為 3x2 舒適大網格：按鈕寬度翻倍、字體放大至 14px 粗體、平板極清晰) */
 .tools-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   width: 100%;
 }
 
 .tool-btn, .tool-btnToggle {
-  flex: 1;
   background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.14);
-  padding: clamp(5px, 0.8vh, 8px) 2px;
-  min-height: clamp(48px, 6vh, 58px);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 4px;
+  min-height: 48px;
   border-radius: 12px;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 6px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 :root[data-theme="light"] .tool-btn, 
@@ -686,12 +689,12 @@ body {
 }
 
 .tool-icon {
-  font-size: 19px;
+  font-size: 20px;
   line-height: 1;
 }
 
 .tool-text {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-main);
   white-space: nowrap;
