@@ -1389,3 +1389,183 @@ body {
   filter: grayscale(0.5);
   border-color: rgba(239, 68, 68, 0.4);
 }
+
+/* ===================================================
+   智慧引導提示系統 (Smart Hints UI & Highlights)
+   =================================================== */
+
+/* 1. 範圍提示高亮 (Stage 1 Scope Highlight) */
+.sudoku-cell.hint-scope {
+  background-color: rgba(234, 179, 8, 0.18) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(234, 179, 8, 0.65) !important;
+  animation: breathe-hint-scope 2s ease-in-out infinite alternate;
+}
+
+@keyframes breathe-hint-scope {
+  0% {
+    background-color: rgba(234, 179, 8, 0.14);
+    box-shadow: inset 0 0 0 1.5px rgba(234, 179, 8, 0.5);
+  }
+  100% {
+    background-color: rgba(234, 179, 8, 0.28);
+    box-shadow: inset 0 0 10px rgba(234, 179, 8, 0.4), inset 0 0 0 2px rgba(250, 204, 21, 0.9);
+  }
+}
+
+/* 2. 目標儲存格高亮 (Stage 2 Target Highlight) */
+.sudoku-cell.hint-target {
+  background-color: rgba(234, 179, 8, 0.35) !important;
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.9), inset 0 0 0 2.5px #facc15 !important;
+  z-index: 5 !important;
+  animation: pulse-hint-target 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-hint-target {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.7), inset 0 0 0 2px #facc15;
+  }
+  100% {
+    transform: scale(1.06);
+    box-shadow: 0 0 25px rgba(250, 204, 21, 1), inset 0 0 0 3px #ffffff;
+  }
+}
+
+/* 3. 排除關聯格高亮 (Stage 2 Related Clues Highlight) */
+.sudoku-cell.hint-related {
+  box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.85), inset 0 0 8px rgba(56, 189, 248, 0.4) !important;
+  background-color: rgba(56, 189, 248, 0.12) !important;
+}
+
+/* 4. 智慧引導卡片 (Smart Hint Card Floating Banner) */
+.smart-hint-card {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 20;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(15, 23, 42, 0.9);
+  border: 1.5px solid rgba(234, 179, 8, 0.65);
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(234, 179, 8, 0.25);
+  padding: 12px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideDownFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+:root[data-theme="light"] .smart-hint-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(202, 138, 4, 0.6);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15), 0 0 20px rgba(234, 179, 8, 0.2);
+}
+
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hint-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hint-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(245, 158, 11, 0.35));
+  border: 1px solid rgba(234, 179, 8, 0.6);
+  color: #fde047;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.2px;
+}
+
+:root[data-theme="light"] .hint-badge {
+  color: #854d0e;
+  background: rgba(254, 240, 138, 0.6);
+  border-color: #eab308;
+}
+
+.hint-card-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.hint-card-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.hint-card-body {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+.hint-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hint-tip {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.btn-hint-next {
+  background: linear-gradient(135deg, #eab308, #ca8a04) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hint-next:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(234, 179, 8, 0.5);
+}
+
+/* 提示按鈕在提示引導啟用時的發光效果 */
+#btn-hint.hint-active {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(245, 158, 11, 0.4)) !important;
+  border-color: #eab308 !important;
+  color: #fde047 !important;
+  box-shadow: 0 0 16px rgba(234, 179, 8, 0.45);
+}

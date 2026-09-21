@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { generateSudoku, solveSudoku } from './sudokuGenerator.js';
 import { Board } from './board.js';
 import { soundManager } from './sound.js';
+import { analyzeSmartHint } from './smartHint.js';
 
 // --- GAME STATE ---
 let board = null;
@@ -54,6 +55,19 @@ const btnHelp = document.getElementById('btn-help');
 const btnShare = document.getElementById('btn-share');
 const btnCheck = document.getElementById('btn-check');
 const btnSound = document.getElementById('btn-sound');
+
+// Smart Hint DOM & State
+const smartHintCard = document.getElementById('smart-hint-card');
+const hintStageBadge = document.getElementById('hint-stage-badge');
+const hintCardText = document.getElementById('hint-card-text');
+const btnHintProceed = document.getElementById('btn-hint-proceed');
+const btnCloseHintCard = document.getElementById('btn-close-hint-card');
+
+let currentHintState = {
+  active: false,
+  stage: 0, // 0: inactive, 1: scope, 2: logic
+  data: null
+};
 
 // Modals
 const modalHelp = document.getElementById('modal-help');
@@ -395,6 +409,7 @@ function formatTime(totalSeconds) {
 
 // --- GAME LIFECYCLE ---
 function startNewGame(difficulty) {
+  dismissHint();
   modalDifficulty.classList.add('hidden');
   const modalLoading = document.getElementById('modal-loading');
   if (modalLoading) {
@@ -584,6 +599,20 @@ function tryLoadGame() {
     localStorage.removeItem(STORAGE_GAME_KEY);
     return false;
   }
+}
+
+// --- SMART HINTS SYSTEM ---
+function dismissHint() {
+  currentHintState.active = false;
+  currentHintState.stage = 0;
+  currentHintState.data = null;
+  if (smartHintCard) smartHintCard.classList.add('hidden');
+  if (btnHint) {
+    btnHint.classList.remove('hint-active');
+    const textEl = btnHint.querySelector('.tool-text');
+    if (textEl) textEl.textContent = '提示';
+  }
+  renderBoard();
 }
 
 // --- SOUND & NEON SWEEP LINE COMPLETION ---
