@@ -2,6 +2,7 @@
 import confetti from 'canvas-confetti';
 import { generateSudoku, solveSudoku } from './sudokuGenerator.js';
 import { Board } from './board.js';
+import { soundManager } from './sound.js';
 
 // --- GAME STATE ---
 let board = null;
@@ -23,6 +24,11 @@ let isPaused = false;
 let errorCount = 0;
 let eraserCount = 0;
 let hintCount = 0;
+
+// Completed Lines Tracker for Neon Sweep FX & Chords
+let completedRows = new Set();
+let completedCols = new Set();
+let completedBoxes = new Set();
 
 // Active filter (when no cell is selected, clicking a number highlights that number)
 let activeNumberFilter = null;
@@ -47,6 +53,7 @@ const toggleAutoNotes = document.getElementById('toggle-auto-notes');
 const btnHelp = document.getElementById('btn-help');
 const btnShare = document.getElementById('btn-share');
 const btnCheck = document.getElementById('btn-check');
+const btnSound = document.getElementById('btn-sound');
 
 // Modals
 const modalHelp = document.getElementById('modal-help');
@@ -74,7 +81,17 @@ const STORAGE_THEME_KEY = 'sub_sudoku_theme';
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initStats();
+  updateSoundButtonUI();
   bindEvents();
+
+  // 任意觸控或點擊解鎖 Web Audio Context
+  const unlockAudio = () => {
+    soundManager.initContext();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+  };
+  window.addEventListener('pointerdown', unlockAudio, { once: true });
+  window.addEventListener('keydown', unlockAudio, { once: true });
   
   // Parse query parameters for shared level
   const urlParams = new URLSearchParams(window.location.search);
@@ -440,9 +457,13 @@ function startNewGame(difficulty) {
       saveStats(stats);
 
       // Render & Start
+      completedRows.clear();
+      completedCols.clear();
+      completedBoxes.clear();
       renderBoard();
       updateNumpadCounts();
       updateUndoRedoButtons();
+      checkLineCompletions(false);
       startTimer();
       saveCurrentGame();
     } else {
@@ -540,9 +561,13 @@ function tryLoadGame() {
 
     timerEl.textContent = formatTime(secondsElapsed);
     
+    completedRows.clear();
+    completedCols.clear();
+    completedBoxes.clear();
     renderBoard();
     updateNumpadCounts();
     updateUndoRedoButtons();
+    checkLineCompletions(false);
 
     if (isPaused) {
       btnPause.textContent = '▶️';
@@ -559,6 +584,124 @@ function tryLoadGame() {
     localStorage.removeItem(STORAGE_GAME_KEY);
     return false;
   }
+}
+
+// --- SOUND & NEON SWEEP LINE COMPLETION ---
+function updateSoundButtonUI() {
+  if (!btnSound) return;
+  const enabled = soundManager.isEnabled();
+  btnSound.textContent = enabled ? '🔊' : '🔇';
+  btnSound.title = enabled ? '切換音效（目前：開啟，快捷鍵 S）' : '切換音效（目前：靜音，快捷鍵 S）';
+  btnSound.classList.toggle('muted', !enabled);
+}
+
+function checkLineCompletions(triggerFx = true) {
+  if (!board) return;
+
+  const newCompletedCells = new Set();
+  let newlyCompletedLines = 0;
+
+  // 1. 檢查 9 橫列
+  for (let r = 0; r < 9; r++) {
+    let complete = true;
+    for (let c = 0; c < 9; c++) {
+      const val = board.getValue(r, c);
+      if (val === 0 || val !== board.solution[r][c]) {
+        complete = false;
+        break;
+      }
+    }
+    if (complete) {
+      if (!completedRows.has(r)) {
+        completedRows.add(r);
+        newlyCompletedLines++;
+        for (let c = 0; c < 9; c++) {
+          newCompletedCells.add(r + ',' + c);
+        }
+      }
+    } else {
+      completedRows.delete(r);
+    }
+  }
+
+  // 2. 檢查 9 直行
+  for (let c = 0; c < 9; c++) {
+    let complete = true;
+    for (let r = 0; r < 9; r++) {
+      const val = board.getValue(r, c);
+      if (val === 0 || val !== board.solution[r][c]) {
+        complete = false;
+        break;
+      }
+    }
+    if (complete) {
+      if (!completedCols.has(c)) {
+        completedCols.add(c);
+        newlyCompletedLines++;
+        for (let r = 0; r < 9; r++) {
+          newCompletedCells.add(r + ',' + c);
+        }
+      }
+    } else {
+      completedCols.delete(c);
+    }
+  }
+
+  // 3. 檢查 9 個 3x3 九宮格
+  for (let b = 0; b < 9; b++) {
+    const startR = Math.floor(b / 3) * 3;
+    const startC = (b % 3) * 3;
+    let complete = true;
+    for (let r = startR; r < startR + 3; r++) {
+      for (let c = startC; c < startC + 3; c++) {
+        const val = board.getValue(r, c);
+        if (val === 0 || val !== board.solution[r][c]) {
+          complete = false;
+          break;
+        }
+      }
+      if (!complete) break;
+    }
+    if (complete) {
+      if (!completedBoxes.has(b)) {
+        completedBoxes.add(b);
+        newlyCompletedLines++;
+        for (let r = startR; r < startR + 3; r++) {
+          for (let c = startC; c < startC + 3; c++) {
+            newCompletedCells.add(r + ',' + c);
+          }
+        }
+      }
+    } else {
+      completedBoxes.delete(b);
+    }
+  }
+
+  // 觸發音效與霓虹流光動畫
+  if (triggerFx && newlyCompletedLines > 0 && newCompletedCells.size > 0) {
+    soundManager.playLineComplete();
+    triggerNeonSweep(Array.from(newCompletedCells));
+  }
+}
+
+function triggerNeonSweep(cellKeys) {
+  cellKeys.forEach((key, idx) => {
+    const parts = key.split(',');
+    const r = parts[0];
+    const c = parts[1];
+    const cellEl = sudokuBoardEl.querySelector('.sudoku-cell[data-row="' + r + '"][data-col="' + c + '"]');
+    if (cellEl) {
+      cellEl.classList.remove('neon-sweep');
+      cellEl.style.setProperty('--sweep-delay', ((idx % 9) * 0.045) + 's');
+      void cellEl.offsetWidth; // force reflow
+      cellEl.classList.add('neon-sweep');
+
+      setTimeout(() => {
+        cellEl.classList.remove('neon-sweep');
+        cellEl.style.removeProperty('--sweep-delay');
+      }, 900);
+    }
+  });
 }
 
 // --- BOARD RENDERING ---
@@ -695,6 +838,7 @@ function bindEvents() {
       updateNumpadCounts();
       updateUndoRedoButtons();
       saveCurrentGame();
+      checkLineCompletions(false);
     }
   });
 
@@ -705,6 +849,7 @@ function bindEvents() {
       updateNumpadCounts();
       updateUndoRedoButtons();
       saveCurrentGame();
+      checkLineCompletions(false);
     }
   });
 
@@ -885,6 +1030,15 @@ function bindEvents() {
     }
   });
 
+  // Sound Toggle
+  if (btnSound) {
+    btnSound.addEventListener('click', () => {
+      const enabled = soundManager.toggle();
+      updateSoundButtonUI();
+      showToast(enabled ? '🔊 音效已開啟' : '🔇 音效已靜音', 'info');
+    });
+  }
+
   // Theme Toggle
   themeToggle.addEventListener('click', toggleTheme);
 }
@@ -964,11 +1118,13 @@ function checkAndAutoFillSoleCandidate(r, c) {
   }
 
   if (autoFilledVal !== 0) {
+    soundManager.playNumber(autoFilledVal);
     board.setCellValue(r, c, autoFilledVal);
     renderBoard();
     updateNumpadCounts();
     updateUndoRedoButtons();
     saveCurrentGame();
+    checkLineCompletions(true);
 
     if (board.checkWin()) {
       handleWin();
@@ -1011,12 +1167,16 @@ function handleInputNumber(val) {
 
     if (isNoteMode) {
       board.toggleNote(selectedRow, selectedCol, val);
+      soundManager.playTone(440, 0.08, 'sine', 0.1);
     } else {
       const correctVal = board.solution[selectedRow][selectedCol];
       const prevVal = board.getValue(selectedRow, selectedCol);
       if (val !== correctVal && val !== prevVal) {
         errorCount++;
         updateCountersUI();
+        soundManager.playError();
+      } else {
+        soundManager.playNumber(val);
       }
       board.setCellValue(selectedRow, selectedCol, val);
     }
@@ -1025,6 +1185,7 @@ function handleInputNumber(val) {
     updateNumpadCounts();
     updateUndoRedoButtons();
     saveCurrentGame();
+    checkLineCompletions(true);
 
     // Check if the board is solved
     if (board.checkWin()) {
@@ -1050,10 +1211,12 @@ function eraseSelectedCell() {
     if (board.clearCell(selectedRow, selectedCol)) {
       eraserCount++;
       updateCountersUI();
+      soundManager.playErase();
       renderBoard();
       updateNumpadCounts();
       updateUndoRedoButtons();
       saveCurrentGame();
+      checkLineCompletions(false);
     }
   }
 }
@@ -1083,11 +1246,13 @@ function applyHint() {
   // Set the correct value
   hintCount++;
   updateCountersUI();
+  soundManager.playNumber(correctVal);
   board.setCellValue(selectedRow, selectedCol, correctVal);
   renderBoard();
   updateNumpadCounts();
   updateUndoRedoButtons();
   saveCurrentGame();
+  checkLineCompletions(true);
 
   if (board.checkWin()) {
     handleWin();
@@ -1218,6 +1383,7 @@ function handleKeyDown(e) {
       updateNumpadCounts();
       updateUndoRedoButtons();
       saveCurrentGame();
+      checkLineCompletions(false);
     }
     e.preventDefault();
   }
@@ -1229,7 +1395,16 @@ function handleKeyDown(e) {
       updateNumpadCounts();
       updateUndoRedoButtons();
       saveCurrentGame();
+      checkLineCompletions(false);
     }
+    e.preventDefault();
+  }
+
+  // Sound toggle (S)
+  else if (e.key === 's' || e.key === 'S') {
+    const enabled = soundManager.toggle();
+    updateSoundButtonUI();
+    showToast(enabled ? '🔊 音效已開啟' : '🔇 音效已靜音', 'info');
     e.preventDefault();
   }
 
@@ -1282,6 +1457,7 @@ function handleKeyDown(e) {
 // --- WIN SCENE ---
 function handleWin() {
   clearInterval(timerInterval);
+  soundManager.playWin();
   
   // Clear saved game
   localStorage.removeItem(STORAGE_GAME_KEY);

@@ -1337,3 +1337,55 @@ body {
   }
 }
 
+/* ===================================================
+   行列 / 九宮格完成霓虹流光掃描特效 (Neon Sweep FX)
+   =================================================== */
+.sudoku-cell.neon-sweep {
+  animation: neonSweep 0.68s cubic-bezier(0.25, 1, 0.5, 1) both;
+  animation-delay: var(--sweep-delay, 0s);
+  z-index: 6 !important;
+}
+
+@keyframes neonSweep {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(168, 85, 247, 0);
+  }
+  30% {
+    transform: scale(1.09);
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.65), rgba(56, 189, 248, 0.65)) !important;
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.9), inset 0 0 14px rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.8) !important;
+  }
+  65% {
+    transform: scale(1.04);
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(56, 189, 248, 0.35)) !important;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.65) !important;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(168, 85, 247, 0);
+  }
+}
+
+.sudoku-cell.neon-sweep .cell-value {
+  animation: textSweep 0.68s cubic-bezier(0.25, 1, 0.5, 1) both;
+  animation-delay: var(--sweep-delay, 0s);
+}
+
+@keyframes textSweep {
+  0% { transform: scale(1); }
+  30% {
+    transform: scale(1.2);
+    color: #ffffff !important;
+    text-shadow: 0 0 12px #ffffff, 0 0 20px rgba(168, 85, 247, 0.9);
+  }
+  100% { transform: scale(1); }
+}
+
+/* 音效切換按鈕樣式 */
+#btn-sound.muted {
+  opacity: 0.65;
+  filter: grayscale(0.5);
+  border-color: rgba(239, 68, 68, 0.4);
+}
