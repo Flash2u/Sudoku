@@ -1,10 +1,12 @@
 ﻿/**
  * Sudoku Board State Manager
+ * Supports Standard Sudoku & Diagonal X-Sudoku
  */
 
 export class Board {
-  constructor(puzzle, solution, difficulty) {
+  constructor(puzzle, solution, difficulty, isDiagonal = false) {
     this.difficulty = difficulty;
+    this.isDiagonal = !!isDiagonal;
     // Initial clue board (0 = empty, 1-9 = clues)
     this.initialBoard = puzzle.map(row => [...row]);
     
@@ -62,7 +64,7 @@ export class Board {
     if (val !== 0) {
       this.notes[row][col].clear();
       
-      // Auto-clear notes in same row, column, and box
+      // Auto-clear notes in same row, column, box, and diagonal
       if (autoClearNotes) {
         this.clearRelatedNotes(row, col, val);
       }
@@ -118,7 +120,7 @@ export class Board {
     return true;
   }
 
-  // Clear candidate note in row, col, and box
+  // Clear candidate note in row, col, box, and diagonals
   clearRelatedNotes(row, col, val) {
     const affected = [];
 
@@ -142,6 +144,26 @@ export class Board {
         if ((r !== row || c !== col) && this.notes[r][c].has(val)) {
           this.notes[r][c].delete(val);
           affected.push({ row: r, col: c });
+        }
+      }
+    }
+
+    // Diagonals (X-Sudoku)
+    if (this.isDiagonal) {
+      if (row === col) {
+        for (let i = 0; i < 9; i++) {
+          if (i !== row && this.notes[i][i].has(val)) {
+            this.notes[i][i].delete(val);
+            affected.push({ row: i, col: i });
+          }
+        }
+      }
+      if (row + col === 8) {
+        for (let i = 0; i < 9; i++) {
+          if (i !== row && this.notes[i][8 - i].has(val)) {
+            this.notes[i][8 - i].delete(val);
+            affected.push({ row: i, col: 8 - i });
+          }
         }
       }
     }
@@ -220,7 +242,7 @@ export class Board {
     return true;
   }
 
-  // Check if grid conflicts with other cells in row, col, or box
+  // Check if grid conflicts with other cells in row, col, box, or diagonals
   hasConflict(row, col, val) {
     if (val === 0) return false;
 
@@ -243,10 +265,24 @@ export class Board {
       }
     }
 
+    // Check Diagonals (X-Sudoku)
+    if (this.isDiagonal) {
+      if (row === col) {
+        for (let i = 0; i < 9; i++) {
+          if (i !== row && this.currentBoard[i][i] === val) return true;
+        }
+      }
+      if (row + col === 8) {
+        for (let i = 0; i < 9; i++) {
+          if (i !== row && this.currentBoard[i][8 - i] === val) return true;
+        }
+      }
+    }
+
     return false;
   }
 
-  // Returns whether cell value matches solution (can be used for hints or error checks)
+  // Returns whether cell value matches solution
   isCorrect(row, col) {
     const val = this.currentBoard[row][col];
     return val === 0 || val === this.solution[row][col];
@@ -320,6 +356,22 @@ export class Board {
       }
     }
 
+    // Diagonals (X-Sudoku)
+    if (this.isDiagonal) {
+      if (row === col) {
+        for (let i = 0; i < 9; i++) {
+          const val = this.currentBoard[i][i];
+          if (val !== 0) used.add(val);
+        }
+      }
+      if (row + col === 8) {
+        for (let i = 0; i < 9; i++) {
+          const val = this.currentBoard[i][8 - i];
+          if (val !== 0) used.add(val);
+        }
+      }
+    }
+
     const candidates = [];
     for (let v = 1; v <= 9; v++) {
       if (!used.has(v)) {
@@ -347,6 +399,7 @@ export class Board {
   serialize() {
     return {
       difficulty: this.difficulty,
+      isDiagonal: this.isDiagonal,
       initialBoard: this.initialBoard,
       currentBoard: this.currentBoard,
       notes: this.notes.map(row => row.map(set => Array.from(set))),
@@ -366,7 +419,7 @@ export class Board {
 
   // Reconstruct board state from serialized format
   static deserialize(data) {
-    const board = new Board(data.initialBoard, data.solution, data.difficulty);
+    const board = new Board(data.initialBoard, data.solution, data.difficulty, data.isDiagonal || false);
     board.currentBoard = data.currentBoard.map(row => [...row]);
     board.notes = data.notes.map(row => row.map(arr => new Set(arr)));
     board.history = data.history.map(action => ({

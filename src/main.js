@@ -84,12 +84,16 @@ const pauseOverlay = document.getElementById('pause-overlay');
 
 // Text/Labels
 const labelDifficulty = document.getElementById('label-difficulty');
+const badgeGameMode = document.getElementById('badge-game-mode');
+const modeDescText = document.getElementById('mode-desc-text');
 const timerEl = document.getElementById('timer');
 
 // --- LOCAL STORAGE KEYS ---
 const STORAGE_GAME_KEY = 'sub_sudoku_active_game';
 const STORAGE_STATS_KEY = 'sub_sudoku_stats';
 const STORAGE_THEME_KEY = 'sub_sudoku_theme';
+const STORAGE_MODE_KEY = 'sub_sudoku_game_mode';
+let selectedGameMode = localStorage.getItem(STORAGE_MODE_KEY) || 'standard'; // 'standard' | 'diagonal'
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -491,7 +495,8 @@ function startNewGame(difficulty) {
 function resetGame() {
   if (!board) return;
   if (confirm('您確定要將棋盤回復到初始狀態嗎？所有的填寫進度與筆記將會被清除。')) {
-    board = new Board(board.initialBoard, board.solution, board.difficulty);
+    board = new Board(board.initialBoard, board.solution, board.difficulty, board.isDiagonal);
+    updateModeUI();
     selectedRow = -1;
     selectedCol = -1;
     activeNumberFilter = null;
@@ -598,6 +603,18 @@ function tryLoadGame() {
     console.error('Failed to parse saved game state:', e);
     localStorage.removeItem(STORAGE_GAME_KEY);
     return false;
+  }
+}
+
+function updateModeUI() {
+  if (!board) return;
+  if (badgeGameMode) {
+    if (board.isDiagonal) {
+      badgeGameMode.classList.remove('hidden');
+      badgeGameMode.textContent = '⚔️ X-Sudoku';
+    } else {
+      badgeGameMode.classList.add('hidden');
+    }
   }
 }
 
@@ -933,6 +950,22 @@ function bindEvents() {
 
   // Keyboard navigation & inputs
   document.addEventListener('keydown', handleKeyDown);
+
+  // Mode selection tabs
+  const modeTabs = document.querySelectorAll('.mode-tab');
+  modeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      modeTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      selectedGameMode = tab.dataset.mode;
+      localStorage.setItem(STORAGE_MODE_KEY, selectedGameMode);
+      if (modeDescText) {
+        modeDescText.textContent = selectedGameMode === 'diagonal'
+          ? '⚔️ 對角線規則：每列、每行、九宮格以及兩條主對角線 1~9 均不重複'
+          : '🌟 經典規則：每橫列、每直行與九宮格數字均為 1~9 不重複';
+      }
+    });
+  });
 
   // Difficulty selection clicks
   document.querySelector('.difficulty-options').addEventListener('click', (e) => {

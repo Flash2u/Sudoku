@@ -1,5 +1,6 @@
 ﻿/**
  * 智慧提示推理演算法模組 (Smart Hints Engine)
+ * 支援標準數獨與對角線 X-Sudoku 邏輯推理
  */
 
 export function analyzeSmartHint(board, selectedRow = -1, selectedCol = -1) {
@@ -63,6 +64,25 @@ export function analyzeSmartHint(board, selectedRow = -1, selectedCol = -1) {
         }
       }
     }
+    // Diagonals (X-Sudoku)
+    if (board.isDiagonal) {
+      if (r === c) {
+        for (let i = 0; i < 9; i++) {
+          if (i !== r) {
+            const v = board.getValue(i, i);
+            if (v !== 0 && !peers.has(v)) peers.set(v, { row: i, col: i });
+          }
+        }
+      }
+      if (r + c === 8) {
+        for (let i = 0; i < 9; i++) {
+          if (i !== r) {
+            const v = board.getValue(i, 8 - i);
+            if (v !== 0 && !peers.has(v)) peers.set(v, { row: i, col: 8 - i });
+          }
+        }
+      }
+    }
     return peers;
   }
 
@@ -76,11 +96,11 @@ export function analyzeSmartHint(board, selectedRow = -1, selectedCol = -1) {
 
     // 若 peers 已經排除了其他 8 個數字 (Naked Single)
     if (seenVals.length === 8 && !peers.has(correctVal)) {
-      return buildNakedSingleHint(r, c, correctVal, peers, seenVals);
+      return buildNakedSingleHint(r, c, correctVal, peers, seenVals, board.isDiagonal);
     }
   }
 
-  // 3. 全盤搜尋唯餘解 (Naked Single - 某格同行同列同宮排除了 8 個數字)
+  // 3. 全盤搜尋唯餘解 (Naked Single - 某格同行同列同宮同對角線排除了 8 個數字)
   const nakedSingles = [];
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -97,10 +117,10 @@ export function analyzeSmartHint(board, selectedRow = -1, selectedCol = -1) {
   if (nakedSingles.length > 0) {
     const candidate = nakedSingles[0];
     const seenVals = Array.from(candidate.peers.keys()).sort((a, b) => a - b);
-    return buildNakedSingleHint(candidate.r, candidate.c, candidate.correctVal, candidate.peers, seenVals);
+    return buildNakedSingleHint(candidate.r, candidate.c, candidate.correctVal, candidate.peers, seenVals, board.isDiagonal);
   }
 
-  // 4. 全盤搜尋隱性唯一解 (Hidden Single in Row / Col / Box)
+  // 4. 全盤搜尋隱性唯一解 (Hidden Single in Row / Col / Box / Diagonal)
   // 4.1 搜尋列中的隱性唯一
   for (let r = 0; r < 9; r++) {
     for (let val = 1; val <= 9; val++) {
@@ -162,6 +182,43 @@ export function analyzeSmartHint(board, selectedRow = -1, selectedCol = -1) {
     }
   }
 
+  // 4.4 搜尋對角線中的隱性唯一 (X-Sudoku)
+  if (board.isDiagonal) {
+    // Diagonal 1
+    for (let val = 1; val <= 9; val++) {
+      let possibleIdx = [];
+      for (let i = 0; i < 9; i++) {
+        if (board.getValue(i, i) === 0) {
+          const peers = getPeerInfo(i, i);
+          if (!peers.has(val) && board.solution[i][i] === val) {
+            possibleIdx.push(i);
+          }
+        }
+      }
+      if (possibleIdx.length === 1) {
+        const idx = possibleIdx[0];
+        return buildHiddenSingleDiagonalHint(idx, idx, val, 1);
+      }
+    }
+
+    // Diagonal 2
+    for (let val = 1; val <= 9; val++) {
+      let possibleIdx = [];
+      for (let i = 0; i < 9; i++) {
+        if (board.getValue(i, 8 - i) === 0) {
+          const peers = getPeerInfo(i, 8 - i);
+          if (!peers.has(val) && board.solution[i][8 - i] === val) {
+            possibleIdx.push(i);
+          }
+        }
+      }
+      if (possibleIdx.length === 1) {
+        const idx = possibleIdx[0];
+        return buildHiddenSingleDiagonalHint(idx, 8 - idx, val, 2);
+      }
+    }
+  }
+
   // 5. Fallback 備用提示：找一個候選數最少的空格
   let bestCell = null;
   let minCandidates = 10;
@@ -192,7 +249,7 @@ export function analyzeSmartHint(board, selectedRow = -1, selectedCol = -1) {
       },
       stage2: {
         title: '🔍 提示 (2/3 邏輯提示)',
-        message: '此格同行同列同宮已出現 ' + seenVals.join(', ') + '，只剩下少數可能，正解為 ' + bestCell.val + '！',
+        message: '此格同行同列同宮' + (board.isDiagonal ? '與同對角線' : '') + '已出現 ' + seenVals.join(', ') + '，只剩下少數可能，正解為 ' + bestCell.val + '！',
         highlightTarget: { row: bestCell.r, col: bestCell.c },
         relatedCells: Array.from(bestCell.peers.values())
       },
@@ -232,8 +289,19 @@ function getBoxCells(boxIdx) {
   return cells;
 }
 
+// 產生對角線 9 格坐標
+function getDiagonalCells(diagType) {
+  const cells = [];
+  if (diagType === 1) {
+    for (let i = 0; i < 9; i++) cells.push({ row: i, col: i });
+  } else {
+    for (let i = 0; i < 9; i++) cells.push({ row: i, col: 8 - i });
+  }
+  return cells;
+}
+
 // 建構「唯餘解 (Naked Single)」三段式提示
-function buildNakedSingleHint(r, c, val, peers, seenVals) {
+function buildNakedSingleHint(r, c, val, peers, seenVals, isDiagonal = false) {
   return {
     type: 'naked_single',
     row: r,
@@ -246,7 +314,7 @@ function buildNakedSingleHint(r, c, val, peers, seenVals) {
     },
     stage2: {
       title: '🔍 提示 (2/3 邏輯提示)',
-      message: '觀察第 ' + (r + 1) + ' 列第 ' + (c + 1) + ' 格！因為其同行、同列與九宮格已經包含了 ' + seenVals.join(', ') + '，所以只能填入 ' + val + '！',
+      message: '觀察第 ' + (r + 1) + ' 列第 ' + (c + 1) + ' 格！因為其同行、同列與九宮格' + (isDiagonal && (r === c || r + c === 8) ? '（及對角線）' : '') + '已經包含了 ' + seenVals.join(', ') + '，所以只能填入 ' + val + '！',
       highlightTarget: { row: r, col: c },
       relatedCells: Array.from(peers.values())
     },
@@ -321,6 +389,31 @@ function buildHiddenSingleBoxHint(r, c, val, boxIdx) {
     stage2: {
       title: '🔍 提示 (2/3 邏輯提示)',
       message: '在' + name + '九宮格中，其他空格都與周圍衝突，因此第 ' + (r + 1) + ' 列第 ' + (c + 1) + ' 格必定是 ' + val + '！',
+      highlightTarget: { row: r, col: c },
+      relatedCells: [{ row: r, col: c }]
+    },
+    stage3: {
+      fillValue: val
+    }
+  };
+}
+
+// 建構「對角線隱性唯一 (Hidden Single in Diagonal)」三段式提示
+function buildHiddenSingleDiagonalHint(r, c, val, diagType) {
+  const name = diagType === 1 ? '主對角線 ↘（左上到右下）' : '次對角線 ↗（右上到左下）';
+  return {
+    type: 'hidden_single_diagonal',
+    row: r,
+    col: c,
+    value: val,
+    stage1: {
+      title: '💡 提示 (1/3 範圍提示)',
+      message: name + '中，有一個數字在該對角線上只有唯一一個位置能放！',
+      highlightScope: getDiagonalCells(diagType)
+    },
+    stage2: {
+      title: '🔍 提示 (2/3 邏輯提示)',
+      message: '在' + name + '中，其他空格都因同行同列已有 ' + val + ' 而被排除，因此第 ' + (r + 1) + ' 列第 ' + (c + 1) + ' 格必定是 ' + val + '！',
       highlightTarget: { row: r, col: c },
       relatedCells: [{ row: r, col: c }]
     },
