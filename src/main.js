@@ -51,6 +51,9 @@ const toggleErrors = document.getElementById('toggle-errors');
 const toggleSoleCandidate = document.getElementById('toggle-sole-candidate');
 const toggleCandidateHint = document.getElementById('toggle-candidate-hint');
 const toggleAutoNotes = document.getElementById('toggle-auto-notes');
+const toggleXMode = document.getElementById('toggle-x-mode');
+const modeToggleCard = document.getElementById('mode-toggle-card');
+const modeStatusText = document.getElementById('mode-status-text');
 const btnHelp = document.getElementById('btn-help');
 const btnShare = document.getElementById('btn-share');
 const btnCheck = document.getElementById('btn-check');
@@ -435,8 +438,9 @@ function startNewGame(difficulty) {
   updateCountersUI(false);
 
   // Initialize Web Worker for background generation
+  const isDiagonal = selectedGameMode === 'diagonal';
   const worker = new Worker(new URL('./sudokuWorker.js', import.meta.url), { type: 'module' });
-  worker.postMessage({ difficulty });
+  worker.postMessage({ difficulty, isDiagonal });
   
   worker.onmessage = function (e) {
     const { success, result, error } = e.data;
@@ -448,8 +452,9 @@ function startNewGame(difficulty) {
 
     if (success) {
       const { puzzle, solution } = result;
-      board = new Board(puzzle, solution, difficulty);
+      board = new Board(puzzle, solution, difficulty, isDiagonal);
       window.board = board;
+      updateModeUI();
 
       // Set difficulty badge
       const diffLabels = {
@@ -581,6 +586,7 @@ function tryLoadGame() {
 
     timerEl.textContent = formatTime(secondsElapsed);
     
+    updateModeUI();
     completedRows.clear();
     completedCols.clear();
     completedBoxes.clear();
@@ -608,14 +614,33 @@ function tryLoadGame() {
 
 function updateModeUI() {
   if (!board) return;
+  const isDiag = !!board.isDiagonal;
   if (badgeGameMode) {
-    if (board.isDiagonal) {
+    if (isDiag) {
       badgeGameMode.classList.remove('hidden');
       badgeGameMode.textContent = '⚔️ X-Sudoku';
     } else {
       badgeGameMode.classList.add('hidden');
     }
   }
+  if (toggleXMode) {
+    toggleXMode.checked = isDiag;
+  }
+  if (modeToggleCard) {
+    modeToggleCard.classList.toggle('active', isDiag);
+  }
+  if (modeStatusText) {
+    modeStatusText.textContent = isDiag ? '⚔️ X 模式已啟用 (雙對角線約束)' : '🌟 標準模式 (點擊開關啟用)';
+  }
+  // 同步難度選擇彈窗內的分頁按鈕
+  const modeTabs = document.querySelectorAll('.mode-tab');
+  modeTabs.forEach(t => {
+    if (t.dataset.mode === (isDiag ? 'diagonal' : 'standard')) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
 }
 
 // --- SMART HINTS SYSTEM ---
@@ -774,6 +799,16 @@ function renderBoard() {
         cellEl.classList.add('user-value');
       }
 
+      // Diagonal styling (X-Sudoku 雙對角線幾何視覺)
+      if (board && board.isDiagonal) {
+        if (r === c || r + c === 8) {
+          cellEl.classList.add('cell-diagonal');
+          if (r === 4 && c === 4) {
+            cellEl.classList.add('cell-diagonal-center');
+          }
+        }
+      }
+
       // Conflict/Error highlight
       if (val !== 0 && !isClue) {
         const key = `${r},${c}`;
@@ -789,12 +824,24 @@ function renderBoard() {
       }
 
       // Highlight Selection and Context
+      let isSameDiagonal = false;
+      if (board && board.isDiagonal && selectedRow !== -1 && selectedCol !== -1) {
+        const selOnMain = (selectedRow === selectedCol);
+        const selOnAnti = (selectedRow + selectedCol === 8);
+        const cellOnMain = (r === c);
+        const cellOnAnti = (r + c === 8);
+        if ((selOnMain && cellOnMain) || (selOnAnti && cellOnAnti)) {
+          isSameDiagonal = true;
+        }
+      }
+
       if (r === selectedRow && c === selectedCol) {
         cellEl.classList.add('selected');
       } else if (
         r === selectedRow || 
         c === selectedCol || 
-        (Math.floor(r / 3) === Math.floor(selectedRow / 3) && Math.floor(c / 3) === Math.floor(selectedCol / 3))
+        (Math.floor(r / 3) === Math.floor(selectedRow / 3) && Math.floor(c / 3) === Math.floor(selectedCol / 3)) ||
+        isSameDiagonal
       ) {
         cellEl.classList.add('highlight-group');
         if (r === selectedRow) {
@@ -805,6 +852,9 @@ function renderBoard() {
         }
         if (Math.floor(r / 3) === Math.floor(selectedRow / 3) && Math.floor(c / 3) === Math.floor(selectedCol / 3)) {
           cellEl.classList.add('highlight-box');
+        }
+        if (isSameDiagonal) {
+          cellEl.classList.add('highlight-diagonal');
         }
       }
 
@@ -948,10 +998,29 @@ function bindEvents() {
     saveCurrentGame();
   });
 
+  // 主畫面常駐對角線 X-Sudoku 模式開關
+  if (toggleXMode) {
+    toggleXMode.addEventListener('change', (e) => {
+      const wantDiag = e.target.checked;
+      const currentDiag = board ? !!board.isDiagonal : false;
+      if (wantDiag === currentDiag) return;
+
+      const modeName = wantDiag ? '對角線 X-Sudoku' : '標準數獨';
+      if (confirm(`切換為「${modeName}」模式將開啟新局，確定要開始新遊戲嗎？`)) {
+        selectedGameMode = wantDiag ? 'diagonal' : 'standard';
+        localStorage.setItem(STORAGE_MODE_KEY, selectedGameMode);
+        startNewGame(board ? board.difficulty : 'medium');
+      } else {
+        // 使用者取消操作，還原開關狀態
+        toggleXMode.checked = currentDiag;
+      }
+    });
+  }
+
   // Keyboard navigation & inputs
   document.addEventListener('keydown', handleKeyDown);
 
-  // Mode selection tabs
+  // Mode selection tabs (難度彈窗內的模式切換分頁)
   const modeTabs = document.querySelectorAll('.mode-tab');
   modeTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -963,6 +1032,13 @@ function bindEvents() {
         modeDescText.textContent = selectedGameMode === 'diagonal'
           ? '⚔️ 對角線規則：每列、每行、九宮格以及兩條主對角線 1~9 均不重複'
           : '🌟 經典規則：每橫列、每直行與九宮格數字均為 1~9 不重複';
+      }
+      // 聯動同步主畫面的開關與外觀
+      const isDiag = selectedGameMode === 'diagonal';
+      if (toggleXMode) toggleXMode.checked = isDiag;
+      if (modeToggleCard) modeToggleCard.classList.toggle('active', isDiag);
+      if (modeStatusText) {
+        modeStatusText.textContent = isDiag ? '⚔️ X 模式已啟用 (雙對角線約束)' : '🌟 標準模式 (點擊開關啟用)';
       }
     });
   });
