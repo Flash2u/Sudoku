@@ -1296,9 +1296,6 @@ function bindEvents() {
       showToast(enabled ? '🔊 音效已開啟' : '🔇 音效已靜音', 'info');
     });
   }
-
-  // Theme Toggle
-  themeToggle.addEventListener('click', toggleTheme);
 }
 
 function findMissingNumber(arr) {
