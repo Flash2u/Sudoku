@@ -9,14 +9,14 @@
 ![遊戲畫面](public/screenshot.png)
 
 ## 📅 最後更新日期
-- **最新版本**：v2.8
+- **最新版本**：v2.9
 - **最後更新日期**：2026-09-21
 
 ## 🛠️ 技術棧 (Tech Stack)
 本遊戲基於純前端技術開發，保證載入速度與極佳效能：
 - **開發建置工具**：[Vite](https://vite.dev/) (高效能前端打包工具)
 - **結構與邏輯**：HTML5 & Modern JavaScript (ES6+ 模組化編寫)
-- **視覺美化**：Vanilla CSS3 (精美玻璃擬態設計、全響應式版面、滑順動畫與黑暗模式)
+- **視覺美化**：Vanilla CSS3 (精美玻璃擬態設計、全響應式版面、PC與平板雙端極致空間優化與5大主題風格)
 - **背景運算執行**：[Web Worker API](https://developer.mozilla.org/zh-TW/docs/Web/API/Web_Workers_API) (將數獨生成算法移出主執行緒，確保 60fps 畫面流暢無卡頓)
 - **狀態持久化**：LocalStorage API (支援自動存檔、關卡復原、分難度詳細統計及本地勳章成就紀錄)
 
