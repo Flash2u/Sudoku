@@ -4,12 +4,14 @@ import { generateSudoku, solveSudoku } from './sudokuGenerator.js';
 import { Board } from './board.js';
 import { soundManager } from './sound.js';
 import { analyzeSmartHint } from './smartHint.js';
+import { ACHIEVEMENTS, getAchievementData, checkGameWinAchievements } from './achievementManager.js';
 
 // --- GAME STATE ---
 let board = null;
 let selectedRow = -1;
 let selectedCol = -1;
 let isNoteMode = false;
+let hasUsedNotesThisGame = false;
 let showErrors = true;
 let showSoleCandidateHint = true;
 let showCandidateHint = false;
@@ -46,7 +48,9 @@ const btnResume = document.getElementById('btn-resume');
 const btnNewGame = document.getElementById('btn-new-game');
 const btnReset = document.getElementById('btn-reset');
 const btnStats = document.getElementById('btn-stats');
+const btnAchievements = document.getElementById('btn-achievements');
 const themeToggle = document.getElementById('theme-toggle');
+const themeDropdownMenu = document.getElementById('theme-dropdown-menu');
 const toggleErrors = document.getElementById('toggle-errors');
 const toggleSoleCandidate = document.getElementById('toggle-sole-candidate');
 const toggleCandidateHint = document.getElementById('toggle-candidate-hint');
@@ -58,6 +62,18 @@ const btnHelp = document.getElementById('btn-help');
 const btnShare = document.getElementById('btn-share');
 const btnCheck = document.getElementById('btn-check');
 const btnSound = document.getElementById('btn-sound');
+
+// Achievement Banner & Modals DOM
+const achievementBanner = document.getElementById('achievement-banner');
+const achBannerIcon = document.getElementById('ach-banner-icon');
+const achBannerTitle = document.getElementById('ach-banner-title');
+const modalAchievements = document.getElementById('modal-achievements');
+const btnCloseAchievements = document.getElementById('btn-close-achievements');
+const achievementsList = document.getElementById('achievements-list');
+const achievementsSummaryBadge = document.getElementById('achievements-summary-badge');
+const achievementsStreakDays = document.getElementById('achievements-streak-days');
+const wonAchievementsArea = document.getElementById('won-achievements-area');
+const wonAchievementsBadges = document.getElementById('won-achievements-badges');
 
 // Smart Hint DOM & State
 const smartHintCard = document.getElementById('smart-hint-card');
@@ -253,22 +269,38 @@ function triggerPopAnimation(el) {
 }
 
 // --- THEME MANAGEMENT ---
+const THEMES_CONFIG = {
+  dark: { name: '深邃暗夜', icon: '🌙' },
+  light: { name: '晨曦明亮', icon: '☀️' },
+  oled: { name: '極致純黑', icon: '🖤' },
+  paper: { name: '復古紙質', icon: '📜' },
+  matcha: { name: '森林抹茶', icon: '🍵' }
+};
+
 function initTheme() {
   const savedTheme = localStorage.getItem(STORAGE_THEME_KEY) || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  updateThemeIcon(savedTheme);
+  applyTheme(savedTheme, false);
 }
 
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem(STORAGE_THEME_KEY, newTheme);
-  updateThemeIcon(newTheme);
-}
+function applyTheme(themeName, showToastMsg = true) {
+  const theme = THEMES_CONFIG[themeName] ? themeName : 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(STORAGE_THEME_KEY, theme);
+  
+  if (themeToggle) {
+    themeToggle.textContent = THEMES_CONFIG[theme].icon;
+    themeToggle.title = `切換主題風格（目前：${THEMES_CONFIG[theme].name}）`;
+  }
 
-function updateThemeIcon(theme) {
-  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+  // 更新選單選項 active 狀態
+  const optionBtns = document.querySelectorAll('.theme-option-btn');
+  optionBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.themeVal === theme);
+  });
+
+  if (showToastMsg) {
+    showToast(`已套用主題：${THEMES_CONFIG[theme].name}`, 'info');
+  }
 }
 
 // --- STATS MANAGEMENT ---
@@ -375,6 +407,57 @@ function clearStats() {
     };
     saveStats(clearedStats);
     updateStatsUI();
+  }
+}
+
+// --- ACHIEVEMENTS MANAGEMENT ---
+function showAchievementBanner(ach) {
+  if (!achievementBanner) return;
+  achBannerIcon.textContent = ach.icon;
+  achBannerTitle.textContent = `${ach.title}：${ach.description}`;
+  achievementBanner.classList.add('show');
+  soundManager.playTone(880, 0.25, 'triangle', 0.2);
+  setTimeout(() => {
+    achievementBanner.classList.remove('show');
+  }, 4000);
+}
+
+function renderAchievementsModal() {
+  const data = getAchievementData();
+  const unlockedKeys = Object.keys(data.unlocked || {});
+  const unlockedCount = unlockedKeys.length;
+  
+  if (achievementsSummaryBadge) {
+    achievementsSummaryBadge.textContent = `${unlockedCount} / ${ACHIEVEMENTS.length} 解鎖`;
+  }
+  if (achievementsStreakDays) {
+    achievementsStreakDays.textContent = data.streak?.currentStreak || 0;
+  }
+  
+  if (achievementsList) {
+    achievementsList.innerHTML = '';
+    ACHIEVEMENTS.forEach(ach => {
+      const isUnlocked = !!data.unlocked[ach.id];
+      const card = document.createElement('div');
+      card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+      
+      const unlockDate = isUnlocked ? data.unlocked[ach.id].unlockedAt : null;
+
+      card.innerHTML = `
+        <div class="achievement-icon-wrap">
+          <span>${ach.icon}</span>
+        </div>
+        <div class="achievement-info">
+          <div class="achievement-header">
+            <span class="achievement-title">${ach.title}</span>
+            <span class="achievement-status-badge">${isUnlocked ? '✓ 已解鎖' : '🔒 未達成'}</span>
+          </div>
+          <div class="achievement-desc">${ach.description}</div>
+          ${isUnlocked && unlockDate ? `<div class="achievement-date">🏆 解鎖於：${unlockDate}</div>` : ''}
+        </div>
+      `;
+      achievementsList.appendChild(card);
+    });
   }
 }
 
@@ -508,10 +591,11 @@ function resetGame() {
     secondsElapsed = 0;
     timerEl.textContent = '00:00';
     
-    // Reset Counters
+    // Reset Counters & Notes Flag
     errorCount = 0;
     eraserCount = 0;
     hintCount = 0;
+    hasUsedNotesThisGame = false;
     updateCountersUI(false);
     
     renderBoard();
@@ -532,6 +616,7 @@ function saveCurrentGame() {
     showSoleCandidateHint,
     showCandidateHint,
     showAutoNotes,
+    hasUsedNotesThisGame,
     errorCount,
     eraserCount,
     hintCount
@@ -553,6 +638,7 @@ function tryLoadGame() {
     showSoleCandidateHint = gameState.showSoleCandidateHint !== undefined ? gameState.showSoleCandidateHint : true;
     showCandidateHint = gameState.showCandidateHint !== undefined ? gameState.showCandidateHint : false;
     showAutoNotes = gameState.showAutoNotes !== undefined ? gameState.showAutoNotes : false;
+    hasUsedNotesThisGame = gameState.hasUsedNotesThisGame !== undefined ? gameState.hasUsedNotesThisGame : false;
     
     // Restore counters
     errorCount = gameState.errorCount || 0;
@@ -1059,6 +1145,39 @@ function bindEvents() {
   btnCloseStats.addEventListener('click', () => modalStats.classList.add('hidden'));
   btnClearStats.addEventListener('click', clearStats);
 
+  // Achievements Modal
+  if (btnAchievements) {
+    btnAchievements.addEventListener('click', () => {
+      renderAchievementsModal();
+      modalAchievements.classList.remove('hidden');
+    });
+  }
+  if (btnCloseAchievements) {
+    btnCloseAchievements.addEventListener('click', () => modalAchievements.classList.add('hidden'));
+  }
+
+  // Theme Picker Dropdown & Selection
+  if (themeToggle && themeDropdownMenu) {
+    themeToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      themeDropdownMenu.classList.toggle('show');
+    });
+
+    themeDropdownMenu.addEventListener('click', (e) => {
+      const optBtn = e.target.closest('.theme-option-btn');
+      if (!optBtn) return;
+      const themeVal = optBtn.dataset.themeVal;
+      applyTheme(themeVal);
+      themeDropdownMenu.classList.remove('show');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!themeDropdownMenu.contains(e.target) && e.target !== themeToggle) {
+        themeDropdownMenu.classList.remove('show');
+      }
+    });
+  }
+
   // Help Modal
   btnHelp.addEventListener('click', () => {
     modalHelp.classList.remove('hidden');
@@ -1080,6 +1199,7 @@ function bindEvents() {
   toggleAutoNotes.addEventListener('change', (e) => {
     showAutoNotes = e.target.checked;
     if (showAutoNotes) {
+      hasUsedNotesThisGame = true;
       isNoteMode = false;
       btnNote.disabled = true;
       btnNote.classList.remove('active');
@@ -1304,6 +1424,7 @@ function handleInputNumber(val) {
     if (isClue) return;
 
     if (isNoteMode) {
+      hasUsedNotesThisGame = true;
       board.toggleNote(selectedRow, selectedCol, val);
       soundManager.playTone(440, 0.08, 'sine', 0.1);
     } else {
@@ -1491,13 +1612,16 @@ function handleKeyDown(e) {
   // Modals open ignore game keybinds
   if (!modalDifficulty.classList.contains('hidden') || 
       !modalStats.classList.contains('hidden') || 
+      !modalAchievements.classList.contains('hidden') || 
       !modalHelp.classList.contains('hidden') ||
       !modalWon.classList.contains('hidden')) {
     if (e.key === 'Escape') {
       modalDifficulty.classList.add('hidden');
       modalStats.classList.add('hidden');
+      modalAchievements.classList.add('hidden');
       modalHelp.classList.add('hidden');
       modalWon.classList.add('hidden');
+      if (themeDropdownMenu) themeDropdownMenu.classList.remove('show');
     }
     return;
   }
@@ -1634,6 +1758,36 @@ function handleWin() {
     recordEl.classList.remove('hidden');
   } else {
     recordEl.classList.add('hidden');
+  }
+
+  // Check Achievements
+  const newlyUnlocked = checkGameWinAchievements({
+    difficulty: board.difficulty,
+    secondsElapsed,
+    errorCount,
+    eraserCount,
+    hintCount,
+    notesUsed: hasUsedNotesThisGame,
+    showAutoNotes
+  });
+
+  if (newlyUnlocked.length > 0) {
+    showAchievementBanner(newlyUnlocked[0]);
+    if (wonAchievementsArea && wonAchievementsBadges) {
+      wonAchievementsArea.classList.remove('hidden');
+      wonAchievementsBadges.innerHTML = '';
+      newlyUnlocked.forEach(ach => {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.style.background = 'linear-gradient(135deg, #eab308, #f59e0b)';
+        badge.style.color = '#000';
+        badge.style.fontWeight = '700';
+        badge.textContent = `${ach.icon} ${ach.title}`;
+        wonAchievementsBadges.appendChild(badge);
+      });
+    }
+  } else {
+    if (wonAchievementsArea) wonAchievementsArea.classList.add('hidden');
   }
 
   // Display Modal after a short delay

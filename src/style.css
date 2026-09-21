@@ -85,6 +85,129 @@
   --blob-3: rgba(147, 197, 253, 0.2);
 }
 
+:root[data-theme="oled"] {
+  --bg-gradient: #000000;
+  --glass-bg: rgba(10, 10, 10, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: rgba(0, 0, 0, 1);
+  --card-bg: #0d0d0d;
+  
+  --text-main: #ffffff;
+  --text-muted: #888888;
+  --text-inverse: #000000;
+  
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-light: rgba(56, 189, 248, 0.15);
+  --accent-glow: rgba(56, 189, 248, 0.4);
+
+  --cell-bg-clue: #080808;
+  --cell-bg-user: #000000;
+  --cell-color-clue: #ffffff;
+  --cell-color-user: #38bdf8;
+  --cell-color-error: #ff3333;
+  --cell-bg-error: rgba(255, 51, 51, 0.35);
+  
+  --highlight-group: rgba(56, 189, 248, 0.1);
+  --highlight-row: rgba(56, 189, 248, 0.12);
+  --highlight-col: rgba(56, 189, 248, 0.12);
+  --highlight-box: rgba(56, 189, 248, 0.18);
+  --highlight-row-pulse: rgba(56, 189, 248, 0.22);
+  --highlight-col-pulse: rgba(56, 189, 248, 0.22);
+  --highlight-box-pulse: rgba(56, 189, 248, 0.3);
+  --highlight-active: rgba(56, 189, 248, 0.28);
+  --highlight-same-num: rgba(56, 189, 248, 0.36);
+  
+  --border-thin: rgba(255, 255, 255, 0.15);
+  --border-thick: rgba(255, 255, 255, 0.45);
+  
+  --blob-1: transparent;
+  --blob-2: transparent;
+  --blob-3: transparent;
+}
+
+:root[data-theme="paper"] {
+  --bg-gradient: linear-gradient(135deg, #f5ebd7 0%, #ecdcb9 50%, #f7efe1 100%);
+  --glass-bg: rgba(253, 248, 237, 0.85);
+  --glass-border: rgba(139, 115, 85, 0.2);
+  --glass-shadow: rgba(112, 86, 52, 0.12);
+  --card-bg: #faf4e8;
+  
+  --text-main: #23201a;
+  --text-muted: #7c6f5d;
+  --text-inverse: #ffffff;
+  
+  --accent: #b45309;
+  --accent-hover: #92400e;
+  --accent-light: rgba(180, 83, 9, 0.12);
+  --accent-glow: rgba(180, 83, 9, 0.25);
+
+  --cell-bg-clue: rgba(235, 222, 198, 0.4);
+  --cell-bg-user: rgba(255, 255, 255, 0.6);
+  --cell-color-clue: #1c1917;
+  --cell-color-user: #1d4ed8; /* 鋼筆墨水藍 */
+  --cell-color-error: #b91c1c;
+  --cell-bg-error: rgba(185, 28, 28, 0.18);
+  
+  --highlight-group: rgba(180, 83, 9, 0.08);
+  --highlight-row: rgba(180, 83, 9, 0.1);
+  --highlight-col: rgba(180, 83, 9, 0.1);
+  --highlight-box: rgba(180, 83, 9, 0.15);
+  --highlight-row-pulse: rgba(180, 83, 9, 0.18);
+  --highlight-col-pulse: rgba(180, 83, 9, 0.18);
+  --highlight-box-pulse: rgba(180, 83, 9, 0.25);
+  --highlight-active: rgba(180, 83, 9, 0.2);
+  --highlight-same-num: rgba(29, 78, 216, 0.22);
+  
+  --border-thin: rgba(139, 115, 85, 0.25);
+  --border-thick: rgba(120, 85, 45, 0.65);
+  
+  --blob-1: rgba(217, 186, 140, 0.35);
+  --blob-2: rgba(235, 205, 160, 0.25);
+  --blob-3: rgba(195, 160, 115, 0.25);
+}
+
+:root[data-theme="matcha"] {
+  --bg-gradient: linear-gradient(135deg, #172a22 0%, #203a2f 50%, #15251e 100%);
+  --glass-bg: rgba(26, 44, 36, 0.7);
+  --glass-border: rgba(52, 211, 153, 0.12);
+  --glass-shadow: rgba(5, 18, 12, 0.45);
+  --card-bg: rgba(30, 52, 42, 0.95);
+  
+  --text-main: #f0fdf4;
+  --text-muted: #86efac;
+  --text-inverse: #0d1f17;
+  
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --accent-light: rgba(16, 185, 129, 0.15);
+  --accent-glow: rgba(16, 185, 129, 0.35);
+
+  --cell-bg-clue: rgba(255, 255, 255, 0.03);
+  --cell-bg-user: rgba(255, 255, 255, 0);
+  --cell-color-clue: #ffffff;
+  --cell-color-user: #6ee7b7;
+  --cell-color-error: #f87171;
+  --cell-bg-error: rgba(239, 68, 68, 0.28);
+  
+  --highlight-group: rgba(16, 185, 129, 0.08);
+  --highlight-row: rgba(16, 185, 129, 0.1);
+  --highlight-col: rgba(16, 185, 129, 0.1);
+  --highlight-box: rgba(16, 185, 129, 0.16);
+  --highlight-row-pulse: rgba(16, 185, 129, 0.18);
+  --highlight-col-pulse: rgba(16, 185, 129, 0.18);
+  --highlight-box-pulse: rgba(16, 185, 129, 0.26);
+  --highlight-active: rgba(16, 185, 129, 0.22);
+  --highlight-same-num: rgba(16, 185, 129, 0.3);
+  
+  --border-thin: rgba(52, 211, 153, 0.15);
+  --border-thick: rgba(52, 211, 153, 0.4);
+  
+  --blob-1: rgba(16, 185, 129, 0.2);
+  --blob-2: rgba(52, 211, 153, 0.15);
+  --blob-3: rgba(6, 95, 70, 0.25);
+}
+
 /* General Resets */
 * {
   box-sizing: border-box;
@@ -1725,3 +1848,232 @@ body {
   align-items: center;
   gap: 4px;
 }
+
+/* ===================================================
+   成就系統樣式 (Achievement System)
+   =================================================== */
+
+/* 成就展示卡片網格 */
+.achievements-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.achievement-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-thin);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.achievement-card.unlocked {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(168, 85, 247, 0.08));
+  border-color: rgba(234, 179, 8, 0.4);
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.12);
+}
+
+.achievement-card.locked {
+  opacity: 0.55;
+  filter: grayscale(0.85);
+}
+
+.achievement-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.achievement-card.unlocked .achievement-icon-wrap {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(245, 158, 11, 0.15));
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.3);
+}
+
+.achievement-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.achievement-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.achievement-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.achievement-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.achievement-card.unlocked .achievement-status-badge {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.achievement-card.locked .achievement-status-badge {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.achievement-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.achievement-date {
+  font-size: 11px;
+  color: #fbbf24;
+  margin-top: 2px;
+}
+
+/* 成就即時解鎖頂部橫幅 (Achievement Unlock Banner) */
+.achievement-banner {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-150px);
+  z-index: 10000;
+  background: linear-gradient(135deg, rgba(26, 20, 48, 0.95), rgba(45, 27, 78, 0.95));
+  border: 2px solid #facc15;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px rgba(250, 204, 21, 0.4);
+  border-radius: 16px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: auto;
+  backdrop-filter: blur(12px);
+  max-width: 90vw;
+}
+
+.achievement-banner.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.achievement-banner-icon {
+  font-size: 38px;
+  animation: bounceTrophy 1s infinite alternate ease-in-out;
+}
+
+@keyframes bounceTrophy {
+  from { transform: scale(1) translateY(0); }
+  to { transform: scale(1.15) translateY(-4px); }
+}
+
+.achievement-banner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.achievement-banner-subtitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #facc15;
+  font-weight: 800;
+}
+
+.achievement-banner-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ===================================================
+   主題切換選單 (Theme Picker Menu)
+   =================================================== */
+.theme-picker-container {
+  position: relative;
+}
+
+.theme-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-thick);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 10px 30px var(--glass-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 175px;
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.theme-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.theme-option-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-option-btn.active {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.theme-opt-color-circle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
